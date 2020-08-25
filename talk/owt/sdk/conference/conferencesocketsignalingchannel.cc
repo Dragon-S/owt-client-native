@@ -63,7 +63,7 @@ const std::string kEventNameConnectionFailed = "connection_failed";
 // 00:00:00.
 const uint64_t kMachLinuxTimeDelta = 978307200;
 #endif
-const int kReconnectionAttempts = 10;
+const int kReconnectionAttempts = 5;//sll modify: 修改重连次数为5，原始为：10
 const int kReconnectionDelay = 2000;
 ConferenceSocketSignalingChannel::ConferenceSocketSignalingChannel()
     : socket_client_(new sio::client()),
@@ -161,6 +161,7 @@ void ConferenceSocketSignalingChannel::Connect(
         // fail (fail listener).
         that->is_reconnection_ = true;
         that->reconnection_attempted_++;
+        that->TriggerOnServerReconnecting();
       }
     }
   });
@@ -275,6 +276,7 @@ void ConferenceSocketSignalingChannel::Connect(
             }
             RTC_LOG(LS_VERBOSE) << "Reconnection success";
             DrainQueuedMessages();
+            TriggerOnServerReconnectionSuccess();
           });
     }
   });
@@ -733,6 +735,19 @@ void ConferenceSocketSignalingChannel::TriggerOnServerDisconnected() {
     (*it)->OnServerDisconnected();
   }
 }
+
+void ConferenceSocketSignalingChannel::TriggerOnServerReconnecting() {
+  for (auto it = observers_.begin(); it != observers_.end(); ++it) {
+    (*it)->OnServerReconnecting();
+  }
+}
+
+void ConferenceSocketSignalingChannel::TriggerOnServerReconnectionSuccess() {
+  for (auto it = observers_.begin(); it != observers_.end(); ++it) {
+    (*it)->OnServerReconnectionSuccess();
+  }
+}
+
 void ConferenceSocketSignalingChannel::Emit(
     const std::string& name,
     const sio::message::list& message,

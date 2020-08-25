@@ -80,6 +80,17 @@ RTC_OBJC_EXPORT
   @brief Triggers when client is disconnected from conference server.
 */
 - (void)conferenceClientDidDisconnect:(OWTConferenceClient*)client;
+
+/**
+  @brief Triggered when the client reconnects to the conference server.
+*/
+- (void)conferenceClientReconnecting:(OWTConferenceClient*)client;
+
+/**
+  @brief Triggered when the client reconnects to the conference server successfully..
+*/
+- (void)conferenceClientReconnectionSuccess:(OWTConferenceClient*)client;
+
 /**
   @brief Triggers when a stream is added.
   @param stream The stream which is added.

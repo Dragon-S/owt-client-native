@@ -39,7 +39,7 @@ vars = {
   # chromium waterfalls. More info at: crbug.com/570091.
   'checkout_configuration': 'default',
   'checkout_instrumented_libraries': 'checkout_linux and checkout_configuration == "default"',
-  'deps_webrtc_git': 'https://github.com/open-webrtc-toolkit',
+  'deps_webrtc_git': 'https://github.com/Dragon-S',
   'chromium_revision': '81e506385dad3a035239513fb6b3ab3cbe1c4c61',
   'boringssl_git': 'https://boringssl.googlesource.com',
   # Three lines of non-changing comments so that

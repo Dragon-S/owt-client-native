@@ -246,6 +246,12 @@ class ConferenceClient final
       const std::string& token,
       std::function<void(std::shared_ptr<ConferenceInfo>)> on_success,
       std::function<void(std::unique_ptr<Exception>)> on_failure);
+
+  void RequestConferenceInfo(
+      std::function<void(std::shared_ptr<ConferenceInfo>)> on_success,
+      std::function<void(std::unique_ptr<Exception>)> on_failure);
+
+  std::shared_ptr<ConferenceInfo> getConferenceInfo();
   /**
     @brief Leave current conference.
   */

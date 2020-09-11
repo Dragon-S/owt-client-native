@@ -99,6 +99,23 @@
         [weakSelf triggerOnFailure:onFailure withException:(std::move(e))];
       });
 }
+- (void)requestConferenceInfo:(nullable void (^)(OWTConferenceInfo*))onSuccess
+                    onFailure:(nullable void (^)(NSError*))onFailure {
+  __weak OWTConferenceClient *weakSelf = self;
+  _nativeConferenceClient->RequestConferenceInfo(
+      [=](std::shared_ptr<owt::conference::ConferenceInfo> info) {
+        if (onSuccess != nil)
+          onSuccess([[OWTConferenceInfo alloc]
+              initWithNativeInfo:info]);
+      },
+      [=](std::unique_ptr<owt::base::Exception> e) {
+        [weakSelf triggerOnFailure:onFailure withException:(std::move(e))];
+      });
+}
+- (OWTConferenceInfo *)getConferenceInfo {
+  std::shared_ptr<owt::conference::ConferenceInfo> info = _nativeConferenceClient->getConferenceInfo();
+  return [[OWTConferenceInfo alloc] initWithNativeInfo:info];
+}
 - (void)publish:(OWTLocalStream*)stream
     withOptions:(OWTPublishOptions*)options
       onSuccess:(void (^)(OWTConferencePublication*))onSuccess

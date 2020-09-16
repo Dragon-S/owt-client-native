@@ -63,8 +63,9 @@ const std::string kEventNameConnectionFailed = "connection_failed";
 // 00:00:00.
 const uint64_t kMachLinuxTimeDelta = 978307200;
 #endif
-const int kReconnectionAttempts = 5;//sll modify: 修改重连次数为5，原始为：10
+const int kReconnectionAttempts = 10;
 const int kReconnectionDelay = 2000;
+const int kReconnectionDelayMax = 5000;
 ConferenceSocketSignalingChannel::ConferenceSocketSignalingChannel()
     : socket_client_(new sio::client()),
       reconnection_ticket_(""),
@@ -133,6 +134,7 @@ void ConferenceSocketSignalingChannel::Connect(
   socket_client_->socket();
   socket_client_->set_reconnect_attempts(kReconnectionAttempts);
   socket_client_->set_reconnect_delay(kReconnectionDelay);
+  socket_client_->set_reconnect_delay_max(kReconnectionDelayMax);
   socket_client_->set_socket_close_listener(
       [weak_this](std::string const& nsp) {
         RTC_LOG(LS_INFO) << "Socket.IO disconnected.";
@@ -152,6 +154,14 @@ void ConferenceSocketSignalingChannel::Connect(
       }
     }
   });
+  socket_client_->set_reconnect_listener(
+      [weak_this](const unsigned reconnect_made, const unsigned delay) {
+        RTC_LOG(LS_INFO) << "Socket.IO Start Reconnection.";
+        auto that = weak_this.lock();
+        if (that) {
+          that->TriggerOnServerReconnecting();
+        }
+      });
   socket_client_->set_reconnecting_listener([weak_this]() {
     RTC_LOG(LS_INFO) << "Socket.IO reconnecting.";
     auto that = weak_this.lock();
@@ -161,7 +171,6 @@ void ConferenceSocketSignalingChannel::Connect(
         // fail (fail listener).
         that->is_reconnection_ = true;
         that->reconnection_attempted_++;
-        that->TriggerOnServerReconnecting();
       }
     }
   });

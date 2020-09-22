@@ -362,6 +362,10 @@ class ConferenceClient final
       std::function<void()> on_success,
       std::function<void(std::unique_ptr<Exception>)> on_failure);
   /**
+   @brief 强制移除PCC
+  */
+  void ForceRemovePcc(const std::string& session_id);
+  /**
    @brief Update a subscription.
   */
   void UpdateSubscription(

@@ -168,12 +168,13 @@ void ConferenceSubscription::Stop() {
   if (that == nullptr || ended_) {
     return;
   } else {
-    that->UnSubscribe(id_, nullptr, nullptr);
-    ended_ = true;
-    const std::lock_guard<std::mutex> lock(observer_mutex_);
-    for (auto its = observers_.begin(); its != observers_.end(); ++its) {
-      (*its).get().OnEnded();
-    }
+    that->UnSubscribe(id_, [=]() {
+      ended_ = true;
+      const std::lock_guard<std::mutex> lock(observer_mutex_);
+      for (auto its = observers_.begin(); its != observers_.end(); ++its) {
+        (*its).get().OnEnded();
+      }
+    }, nullptr);
   }
 }
 void ConferenceSubscription::OnStreamMuteOrUnmute(const std::string& stream_id,

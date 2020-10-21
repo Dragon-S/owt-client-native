@@ -90,6 +90,7 @@ class ConferenceSocketSignalingChannel
   virtual void Disconnect(
       std::function<void()> on_success,
       std::function<void(std::unique_ptr<Exception>)> on_failure);
+  virtual void CloseSocket();
  protected:
   virtual void OnEmitAck(
       sio::message::list const& msg,

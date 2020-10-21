@@ -271,6 +271,10 @@ class ConferenceClient final
       std::function<void()> on_success,
       std::function<void(std::unique_ptr<Exception>)> on_failure);
   /**
+    @brief 用于在调用Leave后，socket收不到Logout时调用，用于关闭socket
+  */
+  void CloseSignalChannel();
+  /**
     @brief Publish the stream to the current room.
     @param stream The stream to be published.
   */

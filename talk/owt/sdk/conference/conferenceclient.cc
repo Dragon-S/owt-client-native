@@ -688,6 +688,28 @@ void ConferenceClient::Send(
   signaling_channel_->SendCustomMessage(
       message, receiver, RunInEventQueue(on_success), on_failure);
 }
+void ConferenceClient::Send(
+    const std::string& command,
+    const std::string& message,
+    std::function<void(std::shared_ptr<std::string>)> on_success,
+    std::function<void(std::unique_ptr<Exception>)> on_failure) {
+  if (!CheckSignalingChannelOnline(on_failure)) {
+    return;
+  }
+  std::weak_ptr<ConferenceClient> weak_this = shared_from_this();
+  signaling_channel_->SendCommandMessage(command, message,
+    [weak_this, on_success] (sio::message::ptr receiveMsg) {
+      auto that = weak_this.lock();
+      if (on_success && that) {
+        that->event_queue_->PostTask(
+          [on_success, receiveMsg] () {
+            std::shared_ptr<std::string> msg = std::make_shared<std::string>(receiveMsg->get_string());
+            on_success(msg);
+          });
+      }
+    },
+    on_failure);
+}
 void ConferenceClient::UpdateSubscription(
     const std::string& session_id,
     const std::string& stream_id,

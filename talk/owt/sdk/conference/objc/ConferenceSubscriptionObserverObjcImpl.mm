@@ -49,5 +49,11 @@ void ConferenceSubscriptionObserverObjcImpl::OnError(
                    errorInfo:err];
   }
 }
+void ConferenceSubscriptionObserverObjcImpl::OnIceStateChange(const int state) {
+  if ([delegate_
+          respondsToSelector:@selector(subscriptionIceStateChange:state:)]) {
+    [delegate_ subscriptionIceStateChange:subscription_ state:state];
+  }
+}
 }
 }

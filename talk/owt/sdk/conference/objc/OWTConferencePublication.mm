@@ -22,6 +22,9 @@
   _nativePublication = nativePublication;
   return self;
 }
+- (void)iceRestart {
+  _nativePublication->IceRestart();
+}
 - (void)stop {
   _nativePublication->Stop();
 }

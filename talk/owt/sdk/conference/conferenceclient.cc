@@ -645,6 +645,30 @@ void ConferenceClient::ForceRemovePcc(const std::string& session_id) {
   }
   subscribe_id_label_map_.erase(session_id);
 }
+void ConferenceClient::IceRestart(const std::string& session_id) {
+  RTC_LOG(LS_INFO) << "sll-------ConferenceClient::IceRestart----";
+  std::lock_guard<std::mutex> subscribe_pcs_mutex_lock(subscribe_pcs_mutex_);
+  std::find_if(subscribe_pcs_.begin(), subscribe_pcs_.end(),
+      [&](std::shared_ptr<ConferencePeerConnectionChannel> o) -> bool {
+        bool isExisted = (o->GetSessionId() == session_id);
+        if (isExisted) {
+          RTC_LOG(LS_INFO) << "sll---subscribe_pcs_----IceRestartEx----";
+          o->IceRestartEx();
+        }
+        return isExisted;
+      });
+
+  std::lock_guard<std::mutex> publish_pcs_mutex_lock(publish_pcs_mutex_);
+  std::find_if(publish_pcs_.begin(), publish_pcs_.end(),
+      [&](std::shared_ptr<ConferencePeerConnectionChannel> o) -> bool {
+        bool isExisted = (o->GetSessionId() == session_id);
+        if (isExisted) {
+          RTC_LOG(LS_INFO) << "sll---publish_pcs_----IceRestartEx----";
+          o->IceRestartEx();
+        }
+        return isExisted;
+      });
+}
 void ConferenceClient::UnSubscribe(
     const std::string& session_id,
     std::function<void()> on_success,
@@ -1082,6 +1106,9 @@ void ConferenceClient::OnStreamError(
     std::shared_ptr<Stream> stream,
     std::shared_ptr<const Exception> exception) {
   TriggerOnStreamError(stream, exception);
+}
+void ConferenceClient::OnIceStateChange(std::shared_ptr<Stream> stream, const int state) {
+  TriggerOnIceStateChange(state);
 }
 void ConferenceClient::OnStreamId(const std::string& id,
                                   const std::string& publish_stream_label) {
@@ -1705,7 +1732,13 @@ void ConferenceClient::TriggerOnStreamError(
     (*its).get().OnStreamError(exception->Message());
   }
 }
-
+void ConferenceClient::TriggerOnIceStateChange(const int state) {
+  const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
+  for (auto its = stream_update_observers_.begin();
+       its != stream_update_observers_.end(); ++its) {
+    (*its).get().OnIceStateChange(state);
+  }
+}
 void ConferenceClient::TriggerOnStreamUpdated(sio::message::ptr stream_info) {
   if (!(stream_info && stream_info->get_flag() == sio::message::flag_object &&
         stream_info->get_map()["id"] && stream_info->get_map()["event"] &&

@@ -24,6 +24,9 @@
   _nativeSubscription = nativeSubscription;
   return self;
 }
+- (void)iceRestart {
+  _nativeSubscription->IceRestart();
+}
 - (void)forceRemovePcc {
   _nativeSubscription->ForceRemovePcc();
 }

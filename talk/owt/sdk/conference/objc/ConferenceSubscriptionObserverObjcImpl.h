@@ -26,6 +26,8 @@ class ConferenceSubscriptionObserverObjcImpl
   virtual void OnUnmute(owt::base::TrackKind track_kind) override;
   /// Triggered when error occurs on subscription.
   virtual void OnError(std::unique_ptr<owt::base::Exception> error_info) override;
+  /// ice state change
+  virtual void OnIceStateChange(const int state) override;
  private:
   __weak OWTConferenceSubscription* subscription_;
   __weak id<OWTConferenceSubscriptionDelegate> delegate_;

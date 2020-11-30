@@ -92,6 +92,8 @@ class ConferencePeerConnectionChannel
       std::function<void(std::unique_ptr<Exception>)> on_failure);
   // Initialize an ICE restarat.
   void IceRestart();
+  // Initialize an ICE restarat.
+  void IceRestartEx();
   // Get the associated stream id if it is a subscription channel.
   std::string GetSubStreamId();
   // Set stream's session ID. This ID is returned by MCU per publish/subscribe.
@@ -109,6 +111,7 @@ class ConferencePeerConnectionChannel
       std::function<void(std::unique_ptr<Exception>)> on_failure);
   // Called when MCU reports stream/connection is failed or ICE failed.
   void OnStreamError(const std::string& error_message);
+  void OnIceStateChange(const int state);
  protected:
   void CreateOffer() override;
   void CreateAnswer() override;

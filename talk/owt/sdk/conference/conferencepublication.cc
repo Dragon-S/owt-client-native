@@ -118,6 +118,14 @@ void ConferencePublication::Stop() {
     }
   }
 }
+void ConferencePublication::IceRestart() {
+  auto that = conference_client_.lock();
+  if (that == nullptr || ended_) {
+    return;
+  } else {
+    that->IceRestart(id_);
+  }
+}
 void ConferencePublication::OnStreamMuteOrUnmute(const std::string& stream_id,
                                                  TrackKind track_kind,
                                                  bool muted) {
@@ -143,6 +151,12 @@ void ConferencePublication::OnStreamError(const std::string& error_msg) {
     std::unique_ptr<Exception> e(new Exception(
         ExceptionType::kConferenceUnknown, error_msg));
     (*its).get().OnError(std::move(e));
+  }
+}
+
+void ConferencePublication::OnIceStateChange(const int state) {
+  for (auto its = observers_.begin(); its != observers_.end(); ++its) {
+    (*its).get().OnIceStateChange(state);
   }
 }
 

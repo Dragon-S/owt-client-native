@@ -124,5 +124,12 @@ void ConferenceClientObserverObjcImpl::OnServerUpdateConferenceInfoSuccess(std::
   }
 }
 
+void ConferenceClientObserverObjcImpl::OnSipAndPstnJoin(const std::string& info) {
+  if ([delegate_
+          respondsToSelector:@selector(conferenceClient:sipAndPstnJoin:)]) {
+    [delegate_ conferenceClient:client_ sipAndPstnJoin:[NSString stringForStdString:info]];
+  }
+}
+
 }
 }

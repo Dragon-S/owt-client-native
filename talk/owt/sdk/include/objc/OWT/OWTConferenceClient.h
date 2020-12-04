@@ -147,6 +147,13 @@ RTC_OBJC_EXPORT
        didAddParticipant:(OWTConferenceParticipant*)user;
 
 /**
+  @brief 语音激励
+  @param activeAudioInputStreamId
+*/
+- (void)conferenceClient:(OWTConferenceClient*)client
+  streamDidChangeActiveInput:(NSString*)activeAudioInputStreamId;
+
+/**
   @brief 有sip或者pstn加入时，会发出此通知
   @param info
 */

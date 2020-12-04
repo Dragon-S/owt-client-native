@@ -222,6 +222,8 @@ class ConferenceClientObserver {
 
   virtual void OnServerUpdateConferenceInfoSuccess(std::shared_ptr<ConferenceInfo>) {}
 
+  virtual void OnActiveInputChanged(const std::string& stream_id) {}
+
   virtual void OnSipAndPstnJoin(const std::string& info) {}
 };
 

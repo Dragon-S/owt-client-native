@@ -39,7 +39,7 @@ vars = {
   # chromium waterfalls. More info at: crbug.com/570091.
   'checkout_configuration': 'default',
   'checkout_instrumented_libraries': 'checkout_linux and checkout_configuration == "default"',
-  'deps_webrtc_git': 'https://github.com/open-webrtc-toolkit',
+  'deps_webrtc_git': 'https://github.com/Dragon-S',
   'chromium_revision': '08af4873751c1692a7ab3728340586923e4eee60',
   'boringssl_git': 'https://boringssl.googlesource.com',
   # Three lines of non-changing comments so that
@@ -238,7 +238,7 @@ deps = {
     Var('chromium_git') + '/infra/luci/client-py.git' + '@' +  Var('swarming_revision'),
   # WebRTC-only dependencies (not present in Chromium).
   'src/third_party/webrtc':
-    Var('deps_webrtc_git') + '/owt-deps-webrtc' + '@' + '2ced2a8be6cdc1d48f5f5f4a88916151fd56b24c',
+    Var('deps_webrtc_git') + '/owt-deps-webrtc' + '@' + '28f5c7fd13db33267dcd7ad18851e9750c59d69a',
   'src/third_party/accessibility_test_framework': {
     'packages': [
         {

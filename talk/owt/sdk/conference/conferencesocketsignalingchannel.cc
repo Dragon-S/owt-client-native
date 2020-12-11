@@ -226,9 +226,9 @@ void ConferenceSocketSignalingChannel::Connect(
                RTC_LOG(LS_ERROR) << "Server returns " << state
                              << " while joining a conference.";
                if (on_failure != nullptr) {
+                 std::string errMsg = "Received error message from server.(state = " + state + ")";
                  std::unique_ptr<Exception> e(new Exception(
-                     ExceptionType::kConferenceInvalidParam,
-                     "Received error message from server."));
+                     ExceptionType::kConferenceInvalidParam, errMsg));
                  on_failure(std::move(e));
                }
                return;

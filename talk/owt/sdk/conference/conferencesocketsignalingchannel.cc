@@ -64,7 +64,7 @@ const std::string kEventNameSipAndPstnJoin = "sipAndPstnJoin";
 // 00:00:00.
 const uint64_t kMachLinuxTimeDelta = 978307200;
 #endif
-const int kReconnectionAttempts = 10;
+const int kReconnectionAttempts = 25;
 const int kReconnectionDelay = 2000;
 const int kReconnectionDelayMax = 5000;
 ConferenceSocketSignalingChannel::ConferenceSocketSignalingChannel()

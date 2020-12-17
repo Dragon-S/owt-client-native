@@ -92,6 +92,10 @@ void ConferenceInfo::RemoveParticipantById(const std::string& id) {
       participants_.begin(), participants_.end(),
       [&](std::shared_ptr<Participant> o) -> bool { return o->Id() == id; }));
 }
+void ConferenceInfo::RemoveAllParticipant() {
+  const std::lock_guard<std::mutex> lock(participants_mutex_);
+  participants_.clear();
+}
 void ConferenceInfo::RemoveStreamById(const std::string& stream_id) {
   const std::lock_guard<std::mutex> lock(remote_streams_mutex_);
   remote_streams_.erase(
@@ -99,6 +103,10 @@ void ConferenceInfo::RemoveStreamById(const std::string& stream_id) {
                    [&](std::shared_ptr<RemoteStream> o) -> bool {
                      return o->Id() == stream_id;
                    }));
+}
+void ConferenceInfo::RemoveAllStream() {
+  const std::lock_guard<std::mutex> lock(remote_streams_mutex_);
+  remote_streams_.clear();
 }
 bool ConferenceInfo::ParticipantPresent(const std::string& participant_id) {
   const std::lock_guard<std::mutex> lock(participants_mutex_);
@@ -332,6 +340,7 @@ void ConferenceClient::Join(
       },
       on_failure);
 }
+//此接口，目前应用于断网重连后调用，其他场景请不要是使用
 void ConferenceClient::RequestConferenceInfo(
     std::function<void(std::shared_ptr<ConferenceInfo>)> on_success,
     std::function<void(std::unique_ptr<Exception>)> on_failure) {
@@ -358,6 +367,9 @@ void ConferenceClient::RequestConferenceInfo(
           sio::message::flag_array) {
         RTC_LOG(LS_WARNING) << "Room info doesn't contain valid users.";
       } else {
+        //清除缓存的旧的参会者
+        current_conference_info_->RemoveAllParticipant();
+
         auto users = room_info->get_map()["participants"]->get_vector();
         // Make sure |on_success| is triggered before any other events because
         // OnUserJoined and OnStreamAdded should be triggered after join a
@@ -372,6 +384,9 @@ void ConferenceClient::RequestConferenceInfo(
           sio::message::flag_array) {
         RTC_LOG(LS_WARNING) << "Room info doesn't contain valid streams.";
       } else {
+        //清除缓存的旧的流
+        current_conference_info_->RemoveAllStream();
+
         auto streams = room_info->get_map()["streams"]->get_vector();
         for (auto it = streams.begin(); it != streams.end(); ++it) {
           RTC_LOG(LS_INFO) << "Find streams in the conference.";

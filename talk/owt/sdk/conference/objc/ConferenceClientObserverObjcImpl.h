@@ -30,6 +30,7 @@ class ConferenceClientObserverObjcImpl : public ConferenceClientObserver {
   virtual void OnServerReconnecting() override;
   virtual void OnServerReconnectionSuccess() override;
   virtual void OnServerUpdateConferenceInfoSuccess(std::shared_ptr<ConferenceInfo> info) override;
+  virtual void OnSipAndPstnJoin(const std::string& info) override;
  private:
   void AddRemoteStreamToMap(const std::string& id, OWTRemoteStream* stream);
   void TriggerOnStreamRemoved(

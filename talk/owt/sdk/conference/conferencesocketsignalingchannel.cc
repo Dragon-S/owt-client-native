@@ -58,6 +58,7 @@ const std::string kEventNameOnUserLeave = "user_leave";
 const std::string kEventNameOnUserPresence = "participant";
 const std::string kEventNameOnDrop = "drop";
 const std::string kEventNameConnectionFailed = "connection_failed";
+const std::string kEventNameSipAndPstnJoin = "sipAndPstnJoin";
 #if defined(WEBRTC_IOS)
 // The epoch of Mach kernel is 2001/1/1 00:00:00, while Linux is 1970/1/1
 // 00:00:00.
@@ -301,6 +302,15 @@ void ConferenceSocketSignalingChannel::Connect(
               bool is_ack, sio::message::list& ack_resp) {
             for (auto it = observers_.begin(); it != observers_.end(); ++it) {
               (*it)->OnStreamError(data);
+            }
+          }));
+  socket_client_->socket()->on(
+      kEventNameSipAndPstnJoin,
+      sio::socket::event_listener_aux(
+          [&](std::string const& name, sio::message::ptr const& data,
+              bool is_ack, sio::message::list& ack_resp) {
+            for (auto it = observers_.begin(); it != observers_.end(); ++it) {
+              (*it)->OnSipAndPstnJoin(data);
             }
           }));
   // Store |on_failure| so it can be invoked if connect failed.

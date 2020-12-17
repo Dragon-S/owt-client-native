@@ -114,6 +114,7 @@ class ConferenceSocketSignalingChannel
   void TriggerOnServerDisconnected();
   void TriggerOnServerReconnecting();
   void TriggerOnServerReconnectionSuccess();
+  void TriggerOnServerUpdateConferenceInfoSuccess();
   void Emit(const std::string& name,
             const sio::message::list& message,
             const std::function<void(sio::message::list const&)> ack,

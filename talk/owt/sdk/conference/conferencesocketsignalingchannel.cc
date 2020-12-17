@@ -276,6 +276,7 @@ void ConferenceSocketSignalingChannel::Connect(
             }
             RTC_LOG(LS_VERBOSE) << "Reconnection success";
             TriggerOnServerReconnectionSuccess();
+            TriggerOnServerUpdateConferenceInfoSuccess();
             DrainQueuedMessages();
           });
     }
@@ -743,6 +744,23 @@ void ConferenceSocketSignalingChannel::TriggerOnServerReconnectionSuccess() {
   for (auto it = observers_.begin(); it != observers_.end(); ++it) {
     (*it)->OnServerReconnectionSuccess();
   }
+}
+void ConferenceSocketSignalingChannel::TriggerOnServerUpdateConferenceInfoSuccess() {
+  sio::message::ptr jsonObject = sio::object_message::create();
+  jsonObject->get_map()["id"] = sio::string_message::create(participant_id_);
+  socket_client_->socket()->emit("room-infos", jsonObject, [=](sio::message::list const& msg) {
+    sio::message::ptr message = msg.at(1);
+    auto room_info = message->get_map()["room"];
+    if (room_info == nullptr ||
+        room_info->get_flag() != sio::message::flag_object) {
+      RTC_LOG(LS_ERROR) << "无效的room info";
+      return;
+    }
+
+    for (auto it = observers_.begin(); it != observers_.end(); ++it) {
+      (*it)->OnServerUpdateConferenceInfoSuccess(message);
+    }
+  });
 }
 void ConferenceSocketSignalingChannel::Emit(
     const std::string& name,

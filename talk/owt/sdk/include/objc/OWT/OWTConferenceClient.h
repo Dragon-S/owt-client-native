@@ -89,6 +89,10 @@ RTC_OBJC_EXPORT
 */
 - (void)conferenceClientReconnectionSuccess:(OWTConferenceClient*)client;
 /**
+  @brief 重连成功后，更新会议信息成功后调用
+*/
+- (void)conferenceClient:(OWTConferenceClient*)client updateConferenceInfoSuccess:(OWTConferenceInfo*)conferenceInfo;
+/**
   @brief Triggers when a stream is added.
   @param stream The stream which is added.
 */

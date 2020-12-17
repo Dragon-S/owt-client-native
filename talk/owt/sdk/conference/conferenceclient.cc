@@ -887,6 +887,52 @@ void ConferenceClient::OnServerReconnectionSuccess() {
     (*its).get().OnServerReconnectionSuccess();
   }
 }
+void ConferenceClient::OnServerUpdateConferenceInfoSuccess(sio::message::ptr info) {
+  auto room_info = info->get_map()["room"];
+  if (room_info == nullptr ||
+      room_info->get_flag() != sio::message::flag_object) {
+    RTC_DCHECK(false);
+    return;
+  }
+  if (room_info->get_map()["id"]->get_flag() !=
+      sio::message::flag_string) {
+    RTC_DCHECK(false);
+    return;
+  } else {
+    current_conference_info_->id_ =
+        room_info->get_map()["id"]->get_string();
+  }
+  // Trigger OnUserJoin for existed users, and also fill in the
+  // ConferenceInfo.
+  if (room_info->get_map()["participants"]->get_flag() !=
+      sio::message::flag_array) {
+    RTC_LOG(LS_WARNING) << "Room info doesn't contain valid users.";
+  } else {
+    auto users = room_info->get_map()["participants"]->get_vector();
+    // Make sure |on_success| is triggered before any other events because
+    // OnUserJoined and OnStreamAdded should be triggered after join a
+    // conference.
+    for (auto it = users.begin(); it != users.end(); ++it) {
+      TriggerOnUserJoined(*it, true);
+    }
+  }
+  // Trigger OnStreamAdded for existed remote streams, and also fill in
+  // the ConferenceInfo.
+  if (room_info->get_map()["streams"]->get_flag() !=
+      sio::message::flag_array) {
+    RTC_LOG(LS_WARNING) << "Room info doesn't contain valid streams.";
+  } else {
+    auto streams = room_info->get_map()["streams"]->get_vector();
+    for (auto it = streams.begin(); it != streams.end(); ++it) {
+      RTC_LOG(LS_INFO) << "Find streams in the conference.";
+      TriggerOnStreamAdded(*it, true);
+    }
+  }
+
+  for (auto its = observers_.begin(); its != observers_.end(); ++its) {
+    (*its).get().OnServerUpdateConferenceInfoSuccess(current_conference_info_);
+  }
+}
 void ConferenceClient::OnStreamError(
     std::shared_ptr<Stream> stream,
     std::shared_ptr<const Exception> exception) {

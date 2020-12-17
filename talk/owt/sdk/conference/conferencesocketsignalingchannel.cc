@@ -65,6 +65,7 @@ const uint64_t kMachLinuxTimeDelta = 978307200;
 #endif
 const int kReconnectionAttempts = 25;
 const int kReconnectionDelay = 5000;
+const int kReconnectionDelayMax = 5000;
 ConferenceSocketSignalingChannel::ConferenceSocketSignalingChannel()
     : socket_client_(new sio::client()),
       reconnection_ticket_(""),
@@ -133,6 +134,7 @@ void ConferenceSocketSignalingChannel::Connect(
   socket_client_->socket();
   socket_client_->set_reconnect_attempts(kReconnectionAttempts);
   socket_client_->set_reconnect_delay(kReconnectionDelay);
+  socket_client_->set_reconnect_delay_max(kReconnectionDelayMax);
   socket_client_->set_socket_close_listener(
       [weak_this](std::string const& nsp) {
         RTC_LOG(LS_INFO) << "Socket.IO disconnected.";

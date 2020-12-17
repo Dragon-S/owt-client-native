@@ -774,6 +774,38 @@ void ConferenceSocketSignalingChannel::RequestConferenceInfo(
     });
   }
 }
+void ConferenceSocketSignalingChannel::RequestParticipantsList(
+    std::function<void(sio::message::ptr participantsList)> on_success,
+    std::function<void(std::unique_ptr<Exception>)> on_failure) {
+  if (!socket_client_->opened() && reconnection_attempted_ == 0 && on_failure) {
+    // Socket.IO is not connected and not reconnecting.
+    std::unique_ptr<Exception> e(new Exception(
+        ExceptionType::kConferenceInvalidSession, "Socket.IO is not connected."));
+    on_failure(std::move(e));
+    return;
+  }
+
+  sio::message::ptr requestParam = sio::string_message::create("string");
+  socket_client_->socket()->emit("getParticipantsList", requestParam, [=](sio::message::list const& msg) {
+    if (msg.size() <= 0 && on_failure) {
+      std::unique_ptr<Exception> e(new Exception(
+          ExceptionType::kConferenceInvalidSession, "空消息！！！"));
+      on_failure(std::move(e));
+      return;
+    }
+    sio::message::ptr participantsListStr = msg.at(0);
+    if ((participantsListStr == nullptr ||
+        participantsListStr->get_flag() != sio::message::flag_string) && on_failure) {
+      std::unique_ptr<Exception> e(new Exception(
+          ExceptionType::kConferenceInvalidSession, "消息类型错误！！！"));
+      on_failure(std::move(e));
+      return;
+    }
+    if (on_success) {
+      on_success(participantsListStr);
+    }
+  });
+}
 void ConferenceSocketSignalingChannel::TriggerOnServerUpdateConferenceInfoSuccess() {
   sio::message::ptr jsonObject = sio::object_message::create();
   jsonObject->get_map()["id"] = sio::string_message::create(participant_id_);

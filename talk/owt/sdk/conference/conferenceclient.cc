@@ -338,7 +338,7 @@ void ConferenceClient::RequestConferenceInfo(
   if (signaling_channel_connected_) {
     signaling_channel_->RequestConferenceInfo(
       [=](sio::message::ptr info) {
-              auto room_info = info->get_map()["room"];
+      auto room_info = info->get_map()["room"];
       if (room_info == nullptr ||
           room_info->get_flag() != sio::message::flag_object) {
         RTC_DCHECK(false);
@@ -389,6 +389,19 @@ void ConferenceClient::RequestConferenceInfo(
 }
 std::shared_ptr<ConferenceInfo> ConferenceClient::getConferenceInfo() {
   return current_conference_info_;
+}
+void ConferenceClient::RequestParticipantsList(
+    std::function<void(std::shared_ptr<std::string>)> on_success,
+    std::function<void(std::unique_ptr<Exception>)> on_failure) {
+  if (signaling_channel_connected_) {
+    signaling_channel_->RequestParticipantsList(
+      [=](sio::message::ptr info) {
+        if (on_success) {
+          std::shared_ptr<std::string> pParticipantsStr = std::make_shared<std::string>(info->get_string());
+          on_success(pParticipantsStr);
+        }
+      },on_failure);
+  }
 }
 void ConferenceClient::Publish(
     std::shared_ptr<LocalStream> stream,

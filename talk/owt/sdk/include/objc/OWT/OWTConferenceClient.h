@@ -83,6 +83,11 @@ RTC_OBJC_EXPORT
 */
 - (void)leaveWithOnSuccess:(nullable void (^)())onSuccess
                  onFailure:(nullable void (^)(NSError*))onFailure;
+/**
+  @brief 用于在调用leaveWithOnSuccess后，socket收不到Logout成功时调用，用来关闭socket
+*/
+- (void)closeClientSignalChannel;
+
 @property(nonatomic, weak) id<OWTConferenceClientDelegate> delegate;
 @end
 /// Delegate for OWTConferenceClient.

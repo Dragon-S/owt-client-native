@@ -176,6 +176,14 @@ void ConferenceSubscription::Stop() {
     }, nullptr);
   }
 }
+void ConferenceSubscription::IceRestart() {
+  auto that = conference_client_.lock();
+  if (that == nullptr || ended_) {
+    return;
+  } else {
+    that->IceRestart(id_);
+  }
+}
 void ConferenceSubscription::OnStreamMuteOrUnmute(const std::string& stream_id,
                                                   TrackKind track_kind,bool muted) {
   if (ended_ || stream_id != stream_id_)

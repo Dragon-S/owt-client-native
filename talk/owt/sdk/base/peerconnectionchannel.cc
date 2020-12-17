@@ -14,7 +14,14 @@ PeerConnectionChannel::PeerConnectionChannel(
     : pc_thread_(nullptr),
       configuration_(configuration),
       factory_(nullptr),
-      peer_connection_(nullptr) {}
+      peer_connection_(nullptr) {
+  webrtc::MediaConstraints::Constraints mandatory;
+  webrtc::MediaConstraints::Constraints optional;
+  mandatory.push_back(webrtc::MediaConstraints::Constraint(webrtc::MediaConstraints::kIceRestart, webrtc::MediaConstraints::kValueFalse));
+
+  webrtc::MediaConstraints *mediaConstraints = new webrtc::MediaConstraints(mandatory, optional);
+  media_constraints_ = std::unique_ptr<webrtc::MediaConstraints>(mediaConstraints);
+}
 PeerConnectionChannel::~PeerConnectionChannel() {
   if (peer_connection_ != nullptr) {
     peer_connection_->Close();
@@ -132,9 +139,11 @@ void PeerConnectionChannel::OnMessage(rtc::Message* msg) {
           static_cast<rtc::TypedMessageData<
               scoped_refptr<FunctionalCreateSessionDescriptionObserver>>*>(
               msg->pdata);
+      webrtc::PeerConnectionInterface::RTCOfferAnswerOptions offerAnswerOptions;
+      webrtc::CopyConstraintsIntoOfferAnswerOptions(media_constraints_.get(), &offerAnswerOptions);
       peer_connection_->CreateOffer(
           param->data(),
-          webrtc::PeerConnectionInterface::RTCOfferAnswerOptions());
+          offerAnswerOptions);
       delete param;
       break;
     }
@@ -144,9 +153,11 @@ void PeerConnectionChannel::OnMessage(rtc::Message* msg) {
           static_cast<rtc::TypedMessageData<
               scoped_refptr<FunctionalCreateSessionDescriptionObserver>>*>(
               msg->pdata);
+      webrtc::PeerConnectionInterface::RTCOfferAnswerOptions offerAnswerOptions;
+      webrtc::CopyConstraintsIntoOfferAnswerOptions(media_constraints_.get(), &offerAnswerOptions);
       peer_connection_->CreateAnswer(
           param->data(),
-          webrtc::PeerConnectionInterface::RTCOfferAnswerOptions());
+          offerAnswerOptions);
       delete param;
       break;
     }

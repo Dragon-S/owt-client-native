@@ -24,6 +24,8 @@ class ConferencePublicationObserverObjcImpl : public owt::base::PublicationObser
   virtual void OnUnmute(owt::base::TrackKind track_kind) override;
   /// Triggered on ice failure or server reported failure.
   virtual void OnError(std::unique_ptr<owt::base::Exception> error_info) override;
+  /// ice state change
+  virtual void OnIceStateChange(const int state) override;
  private:
   __weak OWTConferencePublication* publication_;
   __weak id<OWTConferencePublicationDelegate> delegate_;

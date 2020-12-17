@@ -177,6 +177,7 @@ class ConferencePeerConnectionChannelObserver {
   virtual void OnStreamError(
       std::shared_ptr<Stream> stream,
       std::shared_ptr<const Exception> exception) = 0;
+  virtual void OnIceStateChange(std::shared_ptr<Stream> stream, const int state) = 0;
 };
 /** @endcond */
 /// Observer for OWTConferenceClient.
@@ -349,6 +350,10 @@ class ConferenceClient final
       const std::string& message,
       std::function<void(std::shared_ptr<std::string>)> on_success,
       std::function<void(std::unique_ptr<Exception>)> on_failure);
+  /**
+   @brief 重启ICE
+  */
+  void IceRestart(const std::string& session_id);
  protected:
   ConferenceClient(const ConferenceClientConfiguration& configuration);
   // Implementing ConferenceSocketSignalingChannelObserver.
@@ -375,6 +380,8 @@ class ConferenceClient final
   virtual void OnStreamError(
       std::shared_ptr<Stream> stream,
       std::shared_ptr<const Exception> exception) override;
+  virtual void OnIceStateChange(
+      std::shared_ptr<Stream> stream, const int state) override;
   // Provide access for Publication and Subscription instances.
   /**
     @brief Un-publish the stream from the current room.
@@ -460,6 +467,7 @@ class ConferenceClient final
   void TriggerOnStreamUpdated(std::shared_ptr<sio::message> stream_info);
   void TriggerOnStreamError(std::shared_ptr<Stream> stream,
                             std::shared_ptr<const Exception> exception);
+  void TriggerOnIceStateChange(const int state);
   // Return true if |user_info| is correct, and |*participant| points to the participant
   // object
   bool ParseUser(std::shared_ptr<sio::message> user_info, Participant** participant) const;

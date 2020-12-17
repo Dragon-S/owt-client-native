@@ -276,7 +276,6 @@ void ConferenceSocketSignalingChannel::Connect(
             }
             RTC_LOG(LS_VERBOSE) << "Reconnection success";
             TriggerOnServerReconnectionSuccess();
-            TriggerOnServerUpdateConferenceInfoSuccess();
             DrainQueuedMessages();
           });
     }
@@ -743,6 +742,36 @@ void ConferenceSocketSignalingChannel::TriggerOnServerReconnecting() {
 void ConferenceSocketSignalingChannel::TriggerOnServerReconnectionSuccess() {
   for (auto it = observers_.begin(); it != observers_.end(); ++it) {
     (*it)->OnServerReconnectionSuccess();
+  }
+}
+void ConferenceSocketSignalingChannel::RequestConferenceInfo(
+    std::function<void(sio::message::ptr room_info)> on_success,
+    std::function<void(std::unique_ptr<Exception>)> on_failure) {
+  if (!socket_client_->opened() && reconnection_attempted_ == 0 && on_failure) {
+    // Socket.IO is not connected and not reconnecting.
+    std::unique_ptr<Exception> e(new Exception(
+        ExceptionType::kConferenceInvalidSession, "Socket.IO is not connected."));
+    on_failure(std::move(e));
+    return;
+  }
+  if (socket_client_->opened()) {
+    sio::message::ptr jsonObject = sio::object_message::create();
+    jsonObject->get_map()["id"] = sio::string_message::create(participant_id_);
+    socket_client_->socket()->emit("room-infos", jsonObject, [=](sio::message::list const& msg) {
+      sio::message::ptr message = msg.at(1);
+      auto room_info = message->get_map()["room"];
+      if (room_info == nullptr ||
+          room_info->get_flag() != sio::message::flag_object) {
+        std::unique_ptr<Exception> e(new Exception(
+            ExceptionType::kConferenceInvalidSession, "无效的room info."));
+        on_failure(std::move(e));
+        return;
+      }
+
+      if (on_success) {
+        on_success(message);
+      }
+    });
   }
 }
 void ConferenceSocketSignalingChannel::TriggerOnServerUpdateConferenceInfoSuccess() {

@@ -127,6 +127,10 @@ void ConferenceSubscription::ApplyOptions(
       });
     }
   } else {
+    if (options.video.changedStreamId != "") {
+      that->UpdateSubscription(id_, options.video.changedStreamId, options, on_success, on_failure);
+      return;
+    }
     that->UpdateSubscription(id_, stream_id_, options, on_success, on_failure);
   }
 }
@@ -179,7 +183,7 @@ void ConferenceSubscription::OnStreamMuteOrUnmute(const std::string& stream_id,
 void ConferenceSubscription::OnStreamRemoved(const std::string& stream_id) {
   if (ended_ || stream_id != stream_id_)
     return;
-  Stop();
+  // Stop();//临时修改：解决移除流后，不能应用apply改变streamid的问题
 }
 
 void ConferenceSubscription::OnStreamError(const std::string& error_msg) {

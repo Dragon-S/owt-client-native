@@ -27,6 +27,7 @@ RTC_OBJC_EXPORT
 RTC_OBJC_EXPORT
 @interface OWTConferenceSubscription : NSObject
 - (instancetype)init NS_UNAVAILABLE;
+- (void)forceRemovePcc;
 /// Stop certain subscription. Once a subscription is stopped, it cannot be recovered.
 - (void)stop;
 /// Stop reeving data from remote endpoint.

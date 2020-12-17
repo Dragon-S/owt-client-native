@@ -154,6 +154,14 @@ void ConferenceSubscription::GetNativeStats(
      that->GetStats(id_, on_success, on_failure);
    }
 }
+void ConferenceSubscription::ForceRemovePcc() {
+  auto that = conference_client_.lock();
+  if (that == nullptr || ended_) {
+    return;
+  } else {
+    that->ForceRemovePcc(id_);
+  }
+}
 void ConferenceSubscription::Stop() {
   auto that = conference_client_.lock();
   if (that == nullptr || ended_) {

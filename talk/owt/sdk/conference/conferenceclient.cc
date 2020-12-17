@@ -1075,19 +1075,18 @@ void ConferenceClient::ParseStreamInfo(sio::message::ptr stream_info,
     auto video_original_obj = video_info->get_map()["original"];
     if (video_original_obj == nullptr ||
         video_original_obj->get_flag() != sio::message::flag_array) {
-      RTC_LOG(LS_ERROR) << "Invalid video original info";
-      return;
-    }
+      // RTC_LOG(LS_ERROR) << "Invalid video original info";
+      // return;
 
-    auto originals = video_original_obj->get_vector();
-    for (auto it = originals.begin(); it != originals.end(); ++it) {
-      auto video_format_obj = (*it)->get_map()["format"];
+      // 1.0 protocol: format
+      auto video_format_obj = video_info->get_map()["format"];
       if (video_format_obj == nullptr ||
           video_format_obj->get_flag() != sio::message::flag_object) {
         RTC_LOG(LS_ERROR) << "Invalid video format info.";
         return;
       } else {
         has_video = true;
+        VideoSubscriptionCapabilities video_subscription_capabilities;
         // Parse the video publication settings.
         std::string codec_name =
             video_format_obj->get_map()["codec"]->get_string();
@@ -1101,7 +1100,8 @@ void ConferenceClient::ParseStreamInfo(sio::message::ptr stream_info,
         VideoCodecParameters video_codec_parameters(
             MediaUtils::GetVideoCodecFromString(codec_name), profile_name);
         video_publication_settings.codec = video_codec_parameters;
-        auto video_params_obj = (*it)->get_map()["parameters"];
+        video_subscription_capabilities.codecs.push_back(video_codec_parameters);
+        auto video_params_obj = video_info->get_map()["parameters"];
         if (video_params_obj != nullptr &&
             video_params_obj->get_flag() == sio::message::flag_object) {
           auto main_resolution = video_params_obj->get_map()["resolution"];
@@ -1111,12 +1111,14 @@ void ConferenceClient::ParseStreamInfo(sio::message::ptr stream_info,
                 Resolution(main_resolution->get_map()["width"]->get_int(),
                            main_resolution->get_map()["height"]->get_int());
             video_publication_settings.resolution = resolution;
+            video_subscription_capabilities.resolutions.push_back(resolution);
           }
           double frame_rate_num = 0, bitrate_num = 0, keyframe_interval_num = 0;
           auto main_frame_rate = video_params_obj->get_map()["framerate"];
           if (main_frame_rate != nullptr) {
             frame_rate_num = main_frame_rate->get_int();
             video_publication_settings.frame_rate = frame_rate_num;
+            video_subscription_capabilities.frame_rates.push_back(frame_rate_num);
           }
           auto main_bitrate = video_params_obj->get_map()["bitrate"];
           if (main_bitrate != nullptr) {
@@ -1127,17 +1129,75 @@ void ConferenceClient::ParseStreamInfo(sio::message::ptr stream_info,
               video_params_obj->get_map()["keyFrameInterval"];
           if (main_keyframe_interval != nullptr) {
             keyframe_interval_num = main_keyframe_interval->get_int();
-            video_publication_settings.keyframe_interval =
-                keyframe_interval_num;
+            video_publication_settings.keyframe_interval = keyframe_interval_num;
+            video_subscription_capabilities.keyframe_intervals.push_back(
+                keyframe_interval_num);
           }
         }
-        auto rid_obj = (*it)->get_map()["simulcastRid"];
-        if (rid_obj != nullptr &&
-            rid_obj->get_flag() == sio::message::flag_string) {
-          video_publication_settings.rid = rid_obj->get_string();
-        }
+        //publication_settings.video = video_publication_settings;
         publication_settings.video.push_back(video_publication_settings);
-       }
+      }
+    } else {
+      auto originals = video_original_obj->get_vector();
+      for (auto it = originals.begin(); it != originals.end(); ++it) {
+        auto video_format_obj = (*it)->get_map()["format"];
+        if (video_format_obj == nullptr ||
+            video_format_obj->get_flag() != sio::message::flag_object) {
+          RTC_LOG(LS_ERROR) << "Invalid video format info.";
+          return;
+        } else {
+          has_video = true;
+          // Parse the video publication settings.
+          std::string codec_name =
+              video_format_obj->get_map()["codec"]->get_string();
+          std::string profile_name("");
+          auto profile_name_obj = video_format_obj->get_map()["profile"];
+          if (profile_name_obj != nullptr &&
+              profile_name_obj->get_flag() == sio::message::flag_string) {
+            profile_name = profile_name_obj->get_string();
+          }
+          VideoPublicationSettings video_publication_settings;
+          VideoCodecParameters video_codec_parameters(
+              MediaUtils::GetVideoCodecFromString(codec_name), profile_name);
+          video_publication_settings.codec = video_codec_parameters;
+          auto video_params_obj = (*it)->get_map()["parameters"];
+          if (video_params_obj != nullptr &&
+              video_params_obj->get_flag() == sio::message::flag_object) {
+            auto main_resolution = video_params_obj->get_map()["resolution"];
+            if (main_resolution != nullptr &&
+                main_resolution->get_flag() == sio::message::flag_object) {
+              Resolution resolution =
+                  Resolution(main_resolution->get_map()["width"]->get_int(),
+                             main_resolution->get_map()["height"]->get_int());
+              video_publication_settings.resolution = resolution;
+            }
+            double frame_rate_num = 0, bitrate_num = 0, keyframe_interval_num = 0;
+            auto main_frame_rate = video_params_obj->get_map()["framerate"];
+            if (main_frame_rate != nullptr) {
+              frame_rate_num = main_frame_rate->get_int();
+              video_publication_settings.frame_rate = frame_rate_num;
+            }
+            auto main_bitrate = video_params_obj->get_map()["bitrate"];
+            if (main_bitrate != nullptr) {
+              bitrate_num = main_bitrate->get_int();
+              video_publication_settings.bitrate = bitrate_num;
+            }
+            auto main_keyframe_interval =
+                video_params_obj->get_map()["keyFrameInterval"];
+            if (main_keyframe_interval != nullptr) {
+              keyframe_interval_num = main_keyframe_interval->get_int();
+              video_publication_settings.keyframe_interval =
+                  keyframe_interval_num;
+            }
+          }
+          auto rid_obj = (*it)->get_map()["simulcastRid"];
+          if (rid_obj != nullptr &&
+              rid_obj->get_flag() == sio::message::flag_string) {
+            video_publication_settings.rid = rid_obj->get_string();
+          }
+          publication_settings.video.push_back(video_publication_settings);
+         }
+      }
     }
     // Parse the video subscription capabilities.
     auto optional_video_obj = video_info->get_map()["optional"];

@@ -877,6 +877,16 @@ void ConferenceClient::OnServerDisconnected() {
     (*its).get().OnServerDisconnected();
   }
 }
+void ConferenceClient::OnServerReconnecting() {
+  for (auto its = observers_.begin(); its != observers_.end(); ++its) {
+    (*its).get().OnServerReconnecting();
+  }
+}
+void ConferenceClient::OnServerReconnectionSuccess() {
+  for (auto its = observers_.begin(); its != observers_.end(); ++its) {
+    (*its).get().OnServerReconnectionSuccess();
+  }
+}
 void ConferenceClient::OnStreamError(
     std::shared_ptr<Stream> stream,
     std::shared_ptr<const Exception> exception) {

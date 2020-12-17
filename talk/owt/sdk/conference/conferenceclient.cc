@@ -811,6 +811,17 @@ void ConferenceClient::Unmute(
       break;
   }
 }
+void ConferenceClient::MuteAll(
+    const std::vector<std::string>& streamIds,
+    const bool mute,
+    std::function<void()> on_success,
+    std::function<void(std::unique_ptr<Exception>)> on_failure) {
+  if (!CheckSignalingChannelOnline(on_failure)) {
+    return;
+  }
+  std::string param = mute ? "inactive" : "active";
+  signaling_channel_->SendStreamsControlMessage(streamIds, param, on_success, on_failure);
+}
 void ConferenceClient::Leave(
     std::function<void()> on_success,
     std::function<void(std::unique_ptr<Exception>)> on_failure) {

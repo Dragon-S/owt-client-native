@@ -40,6 +40,10 @@ RTC_OBJC_EXPORT
 - (void)requestParticipantsList:(nullable void (^)(NSString*))onSuccess
                       onFailure:(nullable void (^)(NSError*))onFailure;
 
+- (void)muteAll:(nullable NSArray *)streamIds
+           mute:(BOOL)mute
+      onSuccess:(nullable void (^)())onSuccess
+      onFailure:(nullable void (^)(NSError*))onFailure;
 /**
   @brief Publish the stream to the current room.
   @param stream The stream to be published.

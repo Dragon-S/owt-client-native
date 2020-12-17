@@ -584,6 +584,36 @@ void ConferenceSocketSignalingChannel::SendStreamControlMessage(
        },
        on_failure);
 }
+void ConferenceSocketSignalingChannel::SendStreamsControlMessage(
+    const std::vector<std::string>& streamIds,
+    const std::string& value,
+    std::function<void()> on_success,
+    std::function<void(std::unique_ptr<Exception>)> on_failure) {
+  sio::message::ptr payload = sio::object_message::create();
+
+  sio::message::ptr ids = sio::array_message::create();
+  for (auto it = streamIds.begin(); it != streamIds.end(); ++it) {
+    sio::message::ptr streamId = sio::string_message::create((*it));
+    ids->get_vector().push_back(streamId);
+  }
+  payload->get_map()["ids"] = ids;
+
+  sio::message::ptr command = sio::object_message::create();
+  command->get_map()["op"] = sio::string_message::create("replace");
+  command->get_map()["path"] = sio::string_message::create("/media/audio/status");
+  command->get_map()["value"] = sio::string_message::create(value);
+  payload->get_map()["command"] = command;
+
+  std::weak_ptr<ConferenceSocketSignalingChannel> weak_this =
+      shared_from_this();
+  Emit("controlStreams", payload,
+       [weak_this, on_success, on_failure](sio::message::list const& msg) {
+         if (auto that = weak_this.lock()) {
+           that->OnEmitAck(msg, on_success, on_failure);
+         }
+       },
+       on_failure);
+}
 void ConferenceSocketSignalingChannel::SendSubscriptionControlMessage(
     const std::string& stream_id,
     const std::string& action,

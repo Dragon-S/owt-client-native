@@ -146,6 +146,17 @@ void ConferencePublication::OnStreamRemoved(const std::string& stream_id) {
   Stop();
 }
 
+void ConferencePublication::OnServerFailed(const std::string& peer_id, const std::string& error_msg) {
+  if (ended_ || peer_id != id_)
+    return;
+
+  for (auto its = observers_.begin(); its != observers_.end(); ++its) {
+    std::unique_ptr<Exception> e(
+        new Exception(ExceptionType::kConferenceServerException, error_msg));
+    (*its).get().OnError(std::move(e));
+  }
+}
+
 void ConferencePublication::OnStreamError(const std::string& error_msg) {
   for (auto its = observers_.begin(); its != observers_.end(); ++its) {
     std::unique_ptr<Exception> e(new Exception(

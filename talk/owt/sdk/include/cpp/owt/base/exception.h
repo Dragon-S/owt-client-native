@@ -29,7 +29,8 @@ enum class ExceptionType : int {
   kConferenceInvalidParam,
   kConferenceNotSupported,
   kConferenceInvalidToken,
-  kConferenceInvalidSession
+  kConferenceInvalidSession,
+  kConferenceServerException = 8001 //服务端：ice failed，或者Access node
 };
 /// Class for exceptions
 class Exception {

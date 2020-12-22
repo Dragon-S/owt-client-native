@@ -21,6 +21,7 @@ RTC_OBJC_EXPORT
 - (void)subscriptionDidUnmute:(OWTConferenceSubscription*)subscription
                     trackKind:(OWTTrackKind)kind;
 /// Subscription encountered an ICE failure or server failure, and cannot be used anymore.
+/// 此回调包括服务端ice Failed和Access node，错误码为8001
 - (void)subscriptionDidError:(OWTConferenceSubscription*)subscription
                     errorInfo:(NSError*)error;
 /// ice failed

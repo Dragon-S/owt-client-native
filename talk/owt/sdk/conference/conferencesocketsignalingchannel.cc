@@ -448,10 +448,11 @@ void ConferenceSocketSignalingChannel::Disconnect(
 }
 
 void ConferenceSocketSignalingChannel::CloseSocket() {
-  if (socket_client_->opened()) {
-    DropQueuedMessages();
+    socket_client_->clear_con_listeners();
+
+    socket_client_->clear_socket_listeners();
+
     socket_client_->close();
-  }
 }
 
 void ConferenceSocketSignalingChannel::SendSubscriptionUpdateMessage(

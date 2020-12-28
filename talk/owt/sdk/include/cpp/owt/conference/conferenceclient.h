@@ -60,10 +60,11 @@ class ParticipantObserver {
 class Participant {
   friend class ConferenceInfo;
   public:
-    Participant(std::string id, std::string role, std::string user_id)
+    Participant(std::string id, std::string role, std::string user_id, std::string profile = "")
       : id_(id)
       , role_(role)
-      , user_id_(user_id) {}
+      , user_id_(user_id)
+      , profile_(profile) {}
     virtual ~Participant() {}
     /// Add an observer for pariticipant.
     void AddObserver(ParticipantObserver& observer);
@@ -75,6 +76,8 @@ class Participant {
     std::string Role() const {return role_; }
     /// Get the participant's user id.
     std::string UserId() const { return user_id_; }
+    /// 获取profile
+    std::string Profile() const { return profile_; }
   protected:
     /// Set the participant's ID.
     void Id(std::string id) { id_ = id; }
@@ -88,6 +91,7 @@ class Participant {
     std::string id_;        /// Unique id assigned by MCU portal
     std::string role_;      /// Role of the participant
     std::string user_id_;   /// User account system assigned user id.
+    std::string profile_;   /// profile
     mutable std::mutex observer_mutex_;
     std::vector<std::reference_wrapper<ParticipantObserver>> observers_;
 };

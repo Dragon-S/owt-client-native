@@ -25,6 +25,9 @@
 - (NSString*)userId {
   return [NSString stringForStdString:_nativeParticipant->UserId()];
 }
+- (NSString*)profile {
+  return [NSString stringForStdString:_nativeParticipant->Profile()];
+}
 
 - (void)setDelegate:(id<OWTConferenceParticipantDelegate>) delegate {
   _observer = std::unique_ptr<

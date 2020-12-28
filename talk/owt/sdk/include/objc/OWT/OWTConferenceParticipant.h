@@ -18,6 +18,8 @@ RTC_OBJC_EXPORT
 @property(readonly, strong) NSString* role;
 /// The user ID of the participant. It can be integrated into existing account management system.
 @property(readonly, strong) NSString* userId;
+/// profile
+@property(readonly, strong) NSString* profile;
 
 @property(nonatomic, weak) id<OWTConferenceParticipantDelegate> delegate;
 @end

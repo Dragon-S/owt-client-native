@@ -1658,7 +1658,7 @@ bool ConferenceClient::ParseUser(sio::message::ptr user_message,
       user_message->get_map()["role"] == nullptr ||
       user_message->get_map()["role"]->get_flag() !=
           sio::message::flag_string) {
-//    RTC_DCHECK(false);
+    RTC_DCHECK(false);
     return false;
   }
 

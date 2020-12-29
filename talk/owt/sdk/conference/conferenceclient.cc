@@ -15,7 +15,6 @@
 #include "webrtc/rtc_base/logging.h"
 #include "webrtc/rtc_base/task_queue.h"
 #include "webrtc/rtc_base/third_party/base64/base64.h"
-#include "webrtc/rtc_base/strings/json.h"
 using namespace rtc;
 namespace owt {
 namespace conference {
@@ -1652,9 +1651,9 @@ bool ConferenceClient::ParseUser(sio::message::ptr user_message,
       user_message->get_map()["user"] == nullptr ||
       user_message->get_map()["user"]->get_flag() !=
           sio::message::flag_string ||
-      user_message->get_map()["profile"] == nullptr ||
-      user_message->get_map()["profile"]->get_flag() !=
-          sio::message::flag_object ||
+      user_message->get_map()["metadata"] == nullptr ||
+      user_message->get_map()["metadata"]->get_flag() !=
+          sio::message::flag_string ||
       user_message->get_map()["role"] == nullptr ||
       user_message->get_map()["role"]->get_flag() !=
           sio::message::flag_string) {
@@ -1662,37 +1661,11 @@ bool ConferenceClient::ParseUser(sio::message::ptr user_message,
     return false;
   }
 
-  Json::Value profileJson;
-  auto profile = user_message->get_map()["profile"];
-  if (profile != nullptr ) {
-    if (profile->get_map()["joinMeetWait"]->get_flag() == sio::message::flag_integer) {
-      int joinMeetWait = profile->get_map()["joinMeetWait"]->get_int();
-      profileJson["joinMeetWait"] = joinMeetWait;
-    }
-    if (profile->get_map()["photo"]->get_flag() == sio::message::flag_string) {
-      std::string photo = profile->get_map()["photo"]->get_string();
-      profileJson["photo"] = photo;
-    }
-    if (profile->get_map()["name"]->get_flag() == sio::message::flag_string) {
-      std::string name = profile->get_map()["name"]->get_string();
-      profileJson["name"] = name;
-    }
-    if (profile->get_map()["id"]->get_flag() == sio::message::flag_string) {
-      std::string id = profile->get_map()["id"]->get_string();
-      profileJson["id"] = id;
-    }
-    if (profile->get_map()["_id"]->get_flag() == sio::message::flag_string) {
-      std::string _id = profile->get_map()["_id"]->get_string();
-      profileJson["_id"] = _id;
-    }
-  }
-
-  std::string profileStr = rtc::JsonValueToString(profileJson);
-
+  std::string metadata = user_message->get_map()["metadata"]->get_string();
   std::string id = user_message->get_map()["id"]->get_string();
   std::string user_name = user_message->get_map()["user"]->get_string();
   std::string role = user_message->get_map()["role"]->get_string();
-  *participant = new Participant(id, role, user_name, profileStr);
+  *participant = new Participant(id, role, user_name, metadata);
   return true;
 }
 std::shared_ptr<ConferencePeerConnectionChannel>

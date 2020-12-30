@@ -39,10 +39,22 @@ struct VideoPublicationSettings {
   unsigned long bitrate;
   unsigned long keyframe_interval;
   std::string rid;
+  std::string track_id;
 };
+
+#ifdef OWT_ENABLE_QUIC
+struct TransportSettings {
+  explicit TransportSettings() : transport_type(TransportType::kWebRTC) {}
+  TransportType transport_type;
+};
+#endif
+
 struct PublicationSettings {
   std::vector<AudioPublicationSettings> audio;
   std::vector<VideoPublicationSettings> video;
+#ifdef OWT_ENABLE_QUIC
+  TransportSettings transport;
+#endif
 };
 /**
  @brief Publish options describing encoding settings.
@@ -51,6 +63,9 @@ struct PublicationSettings {
 struct PublishOptions {
   std::vector<AudioEncodingParameters> audio;
   std::vector<VideoEncodingParameters> video;
+#ifdef OWT_ENABLE_QUIC
+  TransportConstraints transport;
+#endif
 };
 
 }  // namespace base

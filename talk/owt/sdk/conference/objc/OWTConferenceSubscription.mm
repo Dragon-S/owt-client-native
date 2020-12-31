@@ -222,6 +222,7 @@
   constrains->frameRate = _frameRate;
   constrains->bitrateMultiplier = _bitrateMultiplier;
   constrains->keyFrameInterval = _keyFrameInterval;
+  constrains->changedStreamId = [NSString stdStringForString:_changedStreamId];
   return constrains;
 }
 @end

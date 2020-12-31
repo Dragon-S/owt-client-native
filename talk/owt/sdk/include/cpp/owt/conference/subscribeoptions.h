@@ -67,11 +67,13 @@ struct VideoSubscriptionUpdateConstraints {
       : resolution(0, 0),
         frameRate(0),
         bitrateMultiplier(0),
-        keyFrameInterval(0) {}
+        keyFrameInterval(0),
+        changedStreamId("") {}
   owt::base::Resolution resolution;
   double frameRate;
   double bitrateMultiplier;
   unsigned long keyFrameInterval;
+  std::string changedStreamId;
 };
 /// Subscription update option used by subscription's ApplyOptions API.
 struct SubscriptionUpdateOptions {

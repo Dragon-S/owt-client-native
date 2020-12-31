@@ -798,29 +798,30 @@ void ConferenceClient::Subscribe(
     }
     return;
   }
+  //sll：去掉防止重复订阅同一流，服务端已经做了此机制
   // Avoid subscribing the same stream twice.
-  {
-    std::lock_guard<std::mutex> lock(subscribe_pcs_mutex_);
-    // Search subscirbe pcs
-    auto it = std::find_if(
-        subscribe_pcs_.begin(), subscribe_pcs_.end(),
-        [&](std::shared_ptr<ConferencePeerConnectionChannel> o) -> bool {
-          return o->GetSubStreamId() == stream->Id();
-        });
-    if (it != subscribe_pcs_.end()) {
-      std::string failure_message(
-          "The same remote stream has already been subscribed. Subcribe after "
-          "it is unsubscribed");
-      if (on_failure != nullptr) {
-        event_queue_->PostTask([on_failure, failure_message]() {
-          std::unique_ptr<Exception> e(new Exception(
-              ExceptionType::kConferenceUnknown, failure_message));
-          on_failure(std::move(e));
-        });
-      }
-      return;
-    }
-  }
+  // {
+  //   std::lock_guard<std::mutex> lock(subscribe_pcs_mutex_);
+  //   // Search subscirbe pcs
+  //   auto it = std::find_if(
+  //       subscribe_pcs_.begin(), subscribe_pcs_.end(),
+  //       [&](std::shared_ptr<ConferencePeerConnectionChannel> o) -> bool {
+  //         return o->GetSubStreamId() == stream->Id();
+  //       });
+  //   if (it != subscribe_pcs_.end()) {
+  //     std::string failure_message(
+  //         "The same remote stream has already been subscribed. Subcribe after "
+  //         "it is unsubscribed");
+  //     if (on_failure != nullptr) {
+  //       event_queue_->PostTask([on_failure, failure_message]() {
+  //         std::unique_ptr<Exception> e(new Exception(
+  //             ExceptionType::kConferenceUnknown, failure_message));
+  //         on_failure(std::move(e));
+  //       });
+  //     }
+  //     return;
+  //   }
+  // }
   // Reorder SDP according to perference list.
   PeerConnectionChannelConfiguration config =
       GetPeerConnectionChannelConfiguration();
@@ -903,6 +904,18 @@ void ConferenceClient::UnPublish(
                    }
                  },
                  on_failure);
+}
+void ConferenceClient::ForceRemovePcc(const std::string& session_id) {
+  std::lock_guard<std::mutex> lock(subscribe_pcs_mutex_);
+  auto it = subscribe_pcs_.begin();
+  while (it != subscribe_pcs_.end()) {
+    if ((*it)->GetSessionId() == session_id) {
+      subscribe_pcs_.erase(it);
+      break;
+    }
+    ++it;
+  }
+  subscribe_id_label_map_.erase(session_id);
 }
 void ConferenceClient::UnSubscribe(
     const std::string& session_id,

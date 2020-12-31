@@ -51,6 +51,8 @@ class ConferenceSubscription : public ConferenceStreamUpdateObserver,
         std::function<void(
             const std::vector<const webrtc::StatsReport*>& reports)> on_success,
         std::function<void(std::unique_ptr<Exception>)> on_failure);
+    /// 强制移除pcc
+    void ForceRemovePcc();
     /// Get connection stats on current subscription.
     void GetStats(
         std::function<void(std::shared_ptr<RTCStatsReport>)> on_success,

@@ -390,6 +390,16 @@ class ConferenceClient final
       std::function<void(std::shared_ptr<owt::base::LocalStream>)> on_success,
       std::function<void(std::unique_ptr<Exception>)> on_failure);
 #endif
+  /**
+    @brief 发送带有命令的消息给服务端
+    @param command 命令名
+    @param message 消息体
+  */
+  void Send(
+      const std::string& command,
+      const std::string& message,
+      std::function<void(std::shared_ptr<std::string>)> on_success,
+      std::function<void(std::unique_ptr<Exception>)> on_failure);
  protected:
   ConferenceClient(const ConferenceClientConfiguration& configuration);
   // Implementing ConferenceSocketSignalingChannelObserver.

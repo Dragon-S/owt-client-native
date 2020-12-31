@@ -128,6 +128,25 @@
         [weakSelf triggerOnFailure:onFailure withException:(std::move(e))];
       });
 }
+- (void)muteAll:(nullable NSArray *)streamIds
+           mute:(BOOL) mute
+      onSuccess:(nullable void (^)())onSuccess
+      onFailure:(nullable void (^)(NSError*))onFailure {
+  std::vector<std::string> vStreamIds;
+  for (NSString* steamId in streamIds) {
+    vStreamIds.push_back([steamId UTF8String]);
+  }
+  __weak OWTConferenceClient *weakSelf = self;
+  _nativeConferenceClient->MuteAll(vStreamIds, mute,
+      [=]() {
+        if (onSuccess != nil) {
+          onSuccess();
+        }
+      },
+      [=](std::unique_ptr<owt::base::Exception> e) {
+        [weakSelf triggerOnFailure:onFailure withException:(std::move(e))];
+      });
+}
 - (void)publish:(OWTLocalStream*)stream
     withOptions:(OWTPublishOptions*)options
       onSuccess:(void (^)(OWTConferencePublication*))onSuccess

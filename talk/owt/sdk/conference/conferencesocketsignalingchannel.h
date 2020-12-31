@@ -68,6 +68,11 @@ class ConferenceSocketSignalingChannel
       const std::string& operation,
       std::function<void()> on_success,
       std::function<void(std::unique_ptr<Exception>)> on_failure);
+  virtual void SendStreamsControlMessage(
+      const std::vector<std::string>& streamIds,
+      const std::string& value,
+      std::function<void()> on_success,
+      std::function<void(std::unique_ptr<Exception>)> on_failure);
   virtual void SendSubscriptionControlMessage(
       const std::string& stream_id,
       const std::string& action,

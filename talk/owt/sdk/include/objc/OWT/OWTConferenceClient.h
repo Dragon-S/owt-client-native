@@ -143,6 +143,12 @@ RTC_OBJC_EXPORT
 */
 - (void)conferenceClient:(OWTConferenceClient*)client
        didAddParticipant:(OWTConferenceParticipant*)user;
+/**
+  @brief 有sip或者pstn加入时，会发出此通知
+  @param info
+*/
+- (void)conferenceClient:(OWTConferenceClient*)client
+          sipAndPstnJoin:(NSString*)info;
 @end
 NS_ASSUME_NONNULL_END
 #endif  // OWT_CONFERENCE_OBJC_OWTCONFERENCECLIENT_H_

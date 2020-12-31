@@ -184,6 +184,7 @@ class ConferenceSocketSignalingChannelObserver {
   virtual void OnServerReconnecting() = 0;
   virtual void OnServerReconnectionSuccess() = 0;
   virtual void OnServerUpdateConferenceInfoSuccess(std::shared_ptr<sio::message> roomInfo) = 0;
+  virtual void OnSipAndPstnJoin(std::shared_ptr<sio::message> info) = 0;
   virtual void OnCustomMessage(std::string& from, std::string& message, std::string& to) = 0;
   virtual void OnSignalingMessage(std::shared_ptr<sio::message> message) = 0;
   virtual void OnStreamError(std::shared_ptr<sio::message> stream) = 0;
@@ -261,6 +262,8 @@ class ConferenceClientObserver {
   virtual void OnServerReconnectionSuccess(){}
 
   virtual void OnServerUpdateConferenceInfoSuccess(std::shared_ptr<ConferenceInfo>){}
+
+  virtual void OnSipAndPstnJoin(const std::string& info){}
 };
 
 /// An asynchronous class for app to communicate with a conference in MCU.
@@ -428,6 +431,7 @@ class ConferenceClient final
   virtual void OnServerReconnecting() override;
   virtual void OnServerReconnectionSuccess() override;
   virtual void OnServerUpdateConferenceInfoSuccess(std::shared_ptr<sio::message> roomInfo) override;
+  virtual void OnSipAndPstnJoin(std::shared_ptr<sio::message> info) override;
   virtual void OnStreamId(const std::string& id,
                           const std::string& publish_stream_label) override;
   virtual void OnSubscriptionId(const std::string& subscription_id,

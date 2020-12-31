@@ -37,6 +37,9 @@ RTC_OBJC_EXPORT
 
 - (OWTConferenceInfo *)getConferenceInfo;
 
+- (void)requestParticipantsList:(nullable void (^)(NSString*))onSuccess
+                      onFailure:(nullable void (^)(NSError*))onFailure;
+
 /**
   @brief Publish the stream to the current room.
   @param stream The stream to be published.

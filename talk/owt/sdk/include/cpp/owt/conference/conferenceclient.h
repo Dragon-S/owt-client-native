@@ -300,6 +300,10 @@ class ConferenceClient final
     @brief 获取会议信息.
   */
   std::shared_ptr<ConferenceInfo> getConferenceInfo();
+
+  void RequestParticipantsList(
+      std::function<void(std::shared_ptr<std::string>)> on_success,
+      std::function<void(std::unique_ptr<Exception>)> on_failure);
   /**
     @brief Leave current conference.
   */

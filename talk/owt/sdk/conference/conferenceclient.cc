@@ -1163,6 +1163,11 @@ void ConferenceClient::Leave(
 #endif
   signaling_channel_->Disconnect(RunInEventQueue(on_success), on_failure);
 }
+void ConferenceClient::CloseSignalChannel() {
+  if (signaling_channel_) {
+    signaling_channel_->CloseSocket();
+  }
+}
 void ConferenceClient::GetConnectionStats(
     const std::string& session_id,
     std::function<void(std::shared_ptr<owt::base::ConnectionStats>)> on_success,

@@ -21,6 +21,9 @@ RTC_OBJC_EXPORT
 /// Publication encountered ICE failure or sever reported failure and cannot be used any more.
 - (void)publicationDidError:(OWTConferencePublication*)publication
                     errorInfo:(NSError*)error;
+/// ice failed
+- (void)publicationIceStateChange:(OWTConferencePublication*)publication
+                            state:(const int)state;
 @end
 /**
   @brief Publication represents a sender for publishing a stream.
@@ -29,6 +32,8 @@ RTC_OBJC_EXPORT
 RTC_OBJC_EXPORT
 @interface OWTConferencePublication : NSObject
 - (instancetype)init NS_UNAVAILABLE;
+/// 重启ICE
+- (void)iceRestart;
 /// Stop certain publication. Once a subscription is stopped, it cannot be recovered.
 - (void)stop;
 /// Stop sending data to remote endpoint.

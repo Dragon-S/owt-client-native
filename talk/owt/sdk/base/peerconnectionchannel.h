@@ -118,7 +118,7 @@ class PeerConnectionChannel : public webrtc::PeerConnectionObserver,
   // Use this data channel to send p2p messages.
   // Use a map if we need more than one data channels for a PeerConnection in
   // the future.
-  webrtc::MediaConstraints media_constraints_;
+  std::unique_ptr<webrtc::MediaConstraints> media_constraints_;
   rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection_;
   // Direction of audio and video transceivers. In conference mode, there are at
   // most 1 audio transceiver and 1 video transceiver.

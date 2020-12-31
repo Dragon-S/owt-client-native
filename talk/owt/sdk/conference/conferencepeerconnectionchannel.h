@@ -92,6 +92,7 @@ class ConferencePeerConnectionChannel
       std::function<void(std::unique_ptr<Exception>)> on_failure);
   // Initialize an ICE restarat.
   void IceRestart();
+  void IceRestartEx();
   // Get the associated stream id if it is a subscription channel.
   std::string GetSubStreamId();
   // Set stream's session ID. This ID is returned by MCU per publish/subscribe.
@@ -112,6 +113,7 @@ class ConferencePeerConnectionChannel
       std::function<void(std::unique_ptr<Exception>)> on_failure);
   // Called when MCU reports stream/connection is failed or ICE failed.
   void OnStreamError(const std::string& error_message);
+  void OnIceStateChange(const int state);
  protected:
   void CreateOffer() override;
   void CreateAnswer() override;
@@ -171,6 +173,7 @@ class ConferencePeerConnectionChannel
   // failure_callback_ to nullptr.
   void ResetCallbacks();
   bool IsMediaStreamEnded(MediaStreamInterface* stream) const;
+  void SetIceRestartConstraint(bool iceRestart = false);
   std::shared_ptr<ConferenceSocketSignalingChannel> signaling_channel_;
   std::string session_id_;   //session ID is 1:1 mapping to the subscribed/published stream.
   webrtc::PeerConnectionInterface::SignalingState signaling_state_;

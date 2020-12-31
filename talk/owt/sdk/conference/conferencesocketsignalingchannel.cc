@@ -195,6 +195,8 @@ void ConferenceSocketSignalingChannel::Connect(
       runtime_message->get_map()["version"] =
           sio::string_message::create(sys_info.runtime.version);
       ua_message->get_map()["runtime"] = runtime_message;
+      sio::message::ptr compatibility = sio::string_message::create("1");
+      ua_message->get_map()["compatibility"] = compatibility;
       login_message->get_map()["userAgent"] = ua_message;
       std::string protocol_version = SIGNALING_PROTOCOL_VERSION;
       login_message->get_map()["protocol"] = sio::string_message::create(protocol_version);

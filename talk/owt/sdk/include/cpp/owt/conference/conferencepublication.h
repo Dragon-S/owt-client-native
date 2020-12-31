@@ -50,6 +50,8 @@ class ConferencePublication : public Publication, public ConferenceStreamUpdateO
         std::function<void(
             const std::vector<const webrtc::StatsReport*>& reports)> on_success,
         std::function<void(std::unique_ptr<Exception>)> on_failure);
+    /// 重启ICE
+    void IceRestart();
     /// Stop current publication.
     void Stop() override;
     /// Check if the publication is stopped or not
@@ -62,6 +64,7 @@ class ConferencePublication : public Publication, public ConferenceStreamUpdateO
     void OnStreamMuteOrUnmute(const std::string& stream_id, TrackKind track_kind, bool muted) override;
     void OnStreamRemoved(const std::string& stream_id) override;
     void OnStreamError(const std::string& error_msg) override;
+    void OnIceStateChange(const int state) override;
     std::string id_;
     std::string stream_id_;
     bool ended_;

@@ -222,6 +222,17 @@ void ConferenceSubscription::OnStreamRemoved(const std::string& stream_id) {
   // Stop();/临时修改：解决移除流后，不能应用apply改变streamid的问题
 }
 
+void ConferenceSubscription::OnServerFailed(const std::string& peer_id, const std::string& error_msg) {
+  if (ended_ || peer_id != id_)
+    return;
+
+  for (auto its = observers_.begin(); its != observers_.end(); ++its) {
+    std::unique_ptr<Exception> e(
+        new Exception(ExceptionType::kConferenceServerException, error_msg));
+    (*its).get().OnError(std::move(e));
+  }
+}
+
 void ConferenceSubscription::OnStreamError(const std::string& error_msg) {
   for (auto its = observers_.begin(); its != observers_.end(); ++its) {
     std::unique_ptr<Exception> e(

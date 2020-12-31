@@ -21,6 +21,7 @@ public:
   virtual void OnStreamRemoved(const std::string& stream_id) {}
   virtual void OnStreamError(const std::string& error_msg){}
   virtual void OnIceStateChange(const int state){}
+  virtual void OnServerFailed(const std::string& peer_id, const std::string& error_msg){}
 #ifdef OWT_ENABLE_QUIC
   virtual void OnIncomingStream(
       const std::string& session_id, owt::quic::QuicTransportStreamInterface* stream) {}

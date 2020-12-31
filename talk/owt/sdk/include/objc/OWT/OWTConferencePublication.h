@@ -19,6 +19,7 @@ RTC_OBJC_EXPORT
 - (void)publicationDidUnmute:(OWTConferencePublication*)publication
                     trackKind:(OWTTrackKind)kind;
 /// Publication encountered ICE failure or sever reported failure and cannot be used any more.
+/// 此回调包括服务端ice Failed和Access node，错误码为8001
 - (void)publicationDidError:(OWTConferencePublication*)publication
                     errorInfo:(NSError*)error;
 /// ice failed

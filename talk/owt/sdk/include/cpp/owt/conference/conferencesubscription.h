@@ -80,6 +80,8 @@ class ConferenceSubscription : public ConferenceStreamUpdateObserver,
   private:
     void OnStreamMuteOrUnmute(const std::string& stream_id, TrackKind track_kind, bool muted);
     void OnStreamRemoved(const std::string& stream_id);
+    //专门处理服务端peer异常
+    void OnServerFailed(const std::string& peer_id, const std::string& error_msg);
     void OnStreamError(const std::string& error_msg);
 #ifdef OWT_ENABLE_QUIC
     void OnIncomingStream(const std::string& session_id, owt::quic::QuicTransportStreamInterface* stream);

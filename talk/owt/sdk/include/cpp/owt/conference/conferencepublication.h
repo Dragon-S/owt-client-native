@@ -64,6 +64,8 @@ class ConferencePublication : public Publication, public ConferenceStreamUpdateO
     void OnStreamMuteOrUnmute(const std::string& stream_id, TrackKind track_kind, bool muted) override;
     void OnStreamRemoved(const std::string& stream_id) override;
     void OnStreamError(const std::string& error_msg) override;
+    //专门处理服务端peer异常
+    void OnServerFailed(const std::string& peer_id, const std::string& error_msg) override;
     void OnIceStateChange(const int state) override;
     std::string id_;
     std::string stream_id_;

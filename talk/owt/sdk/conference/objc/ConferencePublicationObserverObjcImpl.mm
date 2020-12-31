@@ -37,7 +37,7 @@ void ConferencePublicationObserverObjcImpl::OnError(
           respondsToSelector:@selector(publicationDidError:errorInfo:)]) {
     NSError* err = [[NSError alloc]
       initWithDomain:OWTErrorDomain
-                code:OWTConferenceErrorUnknown
+                code:(NSInteger)(error_info->Type())
             userInfo:[[NSDictionary alloc]
                          initWithObjectsAndKeys:
                              [NSString stringForStdString:error_info->Message()],

@@ -145,10 +145,14 @@ class ConferenceInfo {
     void AddParticipant(std::shared_ptr<Participant> participant);
     // Remove participant.
     void RemoveParticipantById(const std::string& id);
+    // Remove all participant.
+    void RemoveAllParticipant();
     // Add remote stream.
     void AddOrUpdateStream(std::shared_ptr<RemoteStream> remote_stream, bool &updated);
     // Remove remote stream.
     void RemoveStreamById(const std::string& stream_id);
+    // Remove all stream.
+    void RemoveAllStream();
     // Trigger participant left event.
     void TriggerOnParticipantLeft(const std::string& participant_id);
     // Trigger stream ended event.
@@ -292,6 +296,7 @@ class ConferenceClient final
       std::function<void(std::unique_ptr<Exception>)> on_failure);
   /**
     @brief 请求会议信息.
+    @note  只适用于重新连接后调用
   */
   void RequestConferenceInfo(
       std::function<void(std::shared_ptr<ConferenceInfo>)> on_success,

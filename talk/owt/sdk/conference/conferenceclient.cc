@@ -572,6 +572,11 @@ std::shared_ptr<ConferenceInfo> ConferenceClient::getConferenceInfo() {
 void ConferenceClient::RequestParticipantsList(
     std::function<void(std::shared_ptr<std::string>)> on_success,
     std::function<void(std::unique_ptr<Exception>)> on_failure) {
+  if (!CheckSignalingChannelOnline(on_failure)) {
+    RTC_LOG(LS_ERROR) << "Signaling channel disconnected.";
+    return;
+  }
+
   if (signaling_channel_connected_) {
     signaling_channel_->RequestParticipantsList(
       [=](sio::message::ptr info) {

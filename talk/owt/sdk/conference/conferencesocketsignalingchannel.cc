@@ -64,7 +64,7 @@ const std::string kEventNameSipAndPstnJoin = "sipAndPstnJoin";
 // 00:00:00.
 const uint64_t kMachLinuxTimeDelta = 978307200;
 #endif
-const int kReconnectionAttempts = 25;
+const int kReconnectionAttempts = 14;
 const int kReconnectionDelay = 2000;
 const int kReconnectionDelayMax = 5000;
 ConferenceSocketSignalingChannel::ConferenceSocketSignalingChannel()
@@ -75,7 +75,16 @@ ConferenceSocketSignalingChannel::ConferenceSocketSignalingChannel()
       is_reconnection_(false),
       outgoing_message_id_(1) {}
 ConferenceSocketSignalingChannel::~ConferenceSocketSignalingChannel() {
-  delete socket_client_;
+  // delete socket_client_;//TODO: 此处有泄漏，主要是为了暂时解决socket线程阻塞主线程问题
+  socket_client_->set_reconnect_attempts(0);
+  socket_client_->set_reconnect_delay(0);
+  socket_client_->set_reconnect_delay_max(0);
+
+  socket_client_->clear_con_listeners();
+
+  socket_client_->clear_socket_listeners();
+
+  TriggerOnServerDisconnected();
 }
 void ConferenceSocketSignalingChannel::AddObserver(
     ConferenceSocketSignalingChannelObserver& observer) {
@@ -286,8 +295,11 @@ void ConferenceSocketSignalingChannel::Connect(
             if (message->get_flag() == sio::message::flag_string) {
               OnReconnectionTicket(message->get_string());
             }
-            RTC_LOG(LS_VERBOSE) << "Reconnection success";
-            DrainQueuedMessages();
+            RTC_LOG(LS_INFO) << "Reconnection success";
+            //FIXME: 断网重连后可能造成，缓存断网前的offer信息，重连成功后，会发送缓存的offer，造成服务端出错。暂时不发送重连后暂时不发送缓存信息。并清空消息队列，
+            //此处可能有未知的错误(需要考虑是否要丢弃重连前的所有信息)!!!
+            // DrainQueuedMessages();
+            DropQueuedMessages();
             TriggerOnServerReconnectionSuccess();
           });
     }
@@ -448,11 +460,11 @@ void ConferenceSocketSignalingChannel::Disconnect(
 }
 
 void ConferenceSocketSignalingChannel::CloseSocket() {
-    socket_client_->clear_con_listeners();
+    // socket_client_->clear_con_listeners();
 
-    socket_client_->clear_socket_listeners();
+    // socket_client_->clear_socket_listeners();
 
-    socket_client_->close();
+    // socket_client_->close();
 }
 
 void ConferenceSocketSignalingChannel::SendSubscriptionUpdateMessage(

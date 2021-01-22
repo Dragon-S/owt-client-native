@@ -218,7 +218,7 @@ void ConferencePeerConnectionChannel::OnRenegotiationNeeded() {}
 void ConferencePeerConnectionChannel::OnIceConnectionChange(
     PeerConnectionInterface::IceConnectionState new_state) {
   RTC_LOG(LS_INFO) << "Ice connection state changed: " << new_state;
-  OnIceStateChange(new_state);
+  // OnIceStateChange(new_state);//FIXME: 暂时屏蔽，有几率出现崩溃
   if (new_state == PeerConnectionInterface::kIceConnectionConnected ||
       new_state == PeerConnectionInterface::kIceConnectionCompleted) {
     connected_ = true;

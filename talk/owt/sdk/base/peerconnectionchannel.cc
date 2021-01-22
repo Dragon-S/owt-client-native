@@ -19,6 +19,8 @@ PeerConnectionChannel::~PeerConnectionChannel() {
   if (peer_connection_ != nullptr) {
     peer_connection_->Close();
   }
+
+  peer_connection_ = nullptr;
 }
 bool PeerConnectionChannel::InitializePeerConnection() {
   RTC_LOG(LS_INFO) << "Initialize PeerConnection.";
@@ -116,6 +118,9 @@ void PeerConnectionChannel::ClosePc(){
 }
 void PeerConnectionChannel::OnMessage(rtc::Message* msg) {
   RTC_CHECK(peer_connection_);
+  if (peer_connection_ == nullptr) {
+    return;
+  }
   if (peer_connection_->signaling_state() ==
       webrtc::PeerConnectionInterface::SignalingState::kClosed) {
     RTC_LOG(LS_WARNING)

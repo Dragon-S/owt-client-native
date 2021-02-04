@@ -127,7 +127,7 @@ void ConferencePeerConnectionChannel::IceRestart() {
 }
 void ConferencePeerConnectionChannel::IceRestartEx() {
   if (SignalingState() == PeerConnectionInterface::SignalingState::kStable) {
-    RTC_LOG(LS_INFO) << "sll-------IceRestartEx----success";
+    RTC_LOG(LS_INFO) << "ConferencePeerConnectionChannel::IceRestartEx----success";
     //清除旧的ice
     std::lock_guard<std::mutex> lock(candidates_mutex_);
     ice_candidates_.clear();
@@ -135,7 +135,7 @@ void ConferencePeerConnectionChannel::IceRestartEx() {
     //重新ice 协商
     this->CreateOffer();
   } else {
-    RTC_LOG(LS_INFO) << "sll-------IceRestartEx----SignalingState = "<<SignalingState();
+    RTC_LOG(LS_INFO) << "ConferencePeerConnectionChannel::IceRestartEx = "<<SignalingState();
   }
 }
 void ConferencePeerConnectionChannel::DoIceRestart() {
@@ -649,12 +649,20 @@ void ConferencePeerConnectionChannel::Subscribe(
     transceiver_init.direction = webrtc::RtpTransceiverDirection::kRecvOnly;
     AddTransceiver(cricket::MediaType::MEDIA_TYPE_VIDEO, transceiver_init);
   }
+
+  std::weak_ptr<ConferencePeerConnectionChannel> weak_this =
+    shared_from_this();
   signaling_channel_->SendInitializationMessage(
       sio_options, "", stream->Id(),
-      [this](std::string session_id) {
+      [weak_this](std::string session_id) {
+        auto that = weak_this.lock();
+        if (!that) {
+          return;
+        }
+
         // Pre-set the session's ID.
-        SetSessionId(session_id);
-        CreateOffer();
+        that->SetSessionId(session_id);
+        that->CreateOffer();
       },
       on_failure);  // TODO: on_failure
 }
@@ -916,25 +924,31 @@ void ConferencePeerConnectionChannel::SendPublishMessage(
     sio::message::ptr options,
     std::shared_ptr<LocalStream> stream,
     std::function<void(std::unique_ptr<Exception>)> on_failure) {
+  std::weak_ptr<ConferencePeerConnectionChannel> weak_this =
+    shared_from_this();
   signaling_channel_->SendInitializationMessage(
       options, stream->MediaStream()->id(), "",
-      [stream, this](std::string session_id) {
-        SetSessionId(session_id);
+      [stream, weak_this](std::string session_id) {
+        auto that = weak_this.lock();
+        if (!that) {
+          return;
+        }
+        that->SetSessionId(session_id);
         for (const auto& track : stream->MediaStream()->GetAudioTracks()) {
           webrtc::RtpTransceiverInit transceiver_init;
           transceiver_init.stream_ids.push_back(stream->MediaStream()->id());
           transceiver_init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
-          AddTransceiver(track, transceiver_init);
+          that->AddTransceiver(track, transceiver_init);
         }
         for (const auto& track : stream->MediaStream()->GetVideoTracks()) {
           webrtc::RtpTransceiverInit transceiver_init;
           transceiver_init.stream_ids.push_back(stream->MediaStream()->id());
           transceiver_init.direction =
               webrtc::RtpTransceiverDirection::kSendOnly;
-          if (configuration_.video.size() > 0 &&
-              configuration_.video[0].rtp_encoding_parameters.size() != 0) {
+          if (that->configuration_.video.size() > 0 &&
+              that->configuration_.video[0].rtp_encoding_parameters.size() != 0) {
             for (auto encoding :
-                 configuration_.video[0].rtp_encoding_parameters) {
+                 that->configuration_.video[0].rtp_encoding_parameters) {
               webrtc::RtpEncodingParameters param;
               param.rid = encoding.rid;
               if (encoding.max_bitrate_bps != 0)
@@ -948,9 +962,9 @@ void ConferencePeerConnectionChannel::SendPublishMessage(
               transceiver_init.send_encodings.push_back(param);
             }
           }
-          AddTransceiver(track, transceiver_init);
+          that->AddTransceiver(track, transceiver_init);
         }
-        CreateOffer();
+        that->CreateOffer();
       },
       on_failure);
 }

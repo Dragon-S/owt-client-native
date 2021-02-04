@@ -117,7 +117,7 @@ void PeerConnectionChannel::ClosePc(){
   pc_thread_->Post(RTC_FROM_HERE, this, kMessageTypeClosePeerConnection, nullptr);
 }
 void PeerConnectionChannel::OnMessage(rtc::Message* msg) {
-  RTC_CHECK(peer_connection_);
+//  RTC_CHECK(peer_connection_);
   if (peer_connection_ == nullptr) {
     return;
   }
@@ -188,7 +188,9 @@ void PeerConnectionChannel::OnMessage(rtc::Message* msg) {
       sdp_string = SdpUtils::SetPreferVideoCodecs(sdp_string, video_codecs);
       webrtc::SessionDescriptionInterface* new_desc(
           webrtc::CreateSessionDescription(desc->type(), sdp_string, nullptr));
-      peer_connection_->SetLocalDescription(param->observer, new_desc);
+      if (peer_connection_ != nullptr) {
+        peer_connection_->SetLocalDescription(param->observer, new_desc);
+      }
       delete param;
       break;
     }

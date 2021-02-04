@@ -187,7 +187,6 @@ ConferenceClient::ConferenceClient(
           webrtc::TaskQueueFactory::Priority::NORMAL));
 }
 ConferenceClient::~ConferenceClient() {
-  signaling_channel_->RemoveObserver(*this);
 }
 void ConferenceClient::AddObserver(ConferenceClientObserver& observer) {
   const std::lock_guard<std::mutex> lock(observer_mutex_);
@@ -344,8 +343,13 @@ void ConferenceClient::RequestConferenceInfo(
     std::function<void(std::shared_ptr<ConferenceInfo>)> on_success,
     std::function<void(std::unique_ptr<Exception>)> on_failure) {
   if (signaling_channel_connected_) {
+    std::weak_ptr<ConferenceClient> weak_this = shared_from_this();
     signaling_channel_->RequestConferenceInfo(
-      [=](sio::message::ptr info) {
+      [weak_this, on_success](sio::message::ptr info) {
+      auto that = weak_this.lock();
+      if (!that) {
+        return;
+      }
       auto room_info = info->get_map()["room"];
       if (room_info == nullptr ||
           room_info->get_flag() != sio::message::flag_object) {
@@ -357,7 +361,7 @@ void ConferenceClient::RequestConferenceInfo(
         RTC_DCHECK(false);
         return;
       } else {
-        current_conference_info_->id_ =
+        that->current_conference_info_->id_ =
             room_info->get_map()["id"]->get_string();
       }
       // Trigger OnUserJoin for existed users, and also fill in the
@@ -367,14 +371,14 @@ void ConferenceClient::RequestConferenceInfo(
         RTC_LOG(LS_WARNING) << "Room info doesn't contain valid users.";
       } else {
         //清除缓存的旧的参会者
-        current_conference_info_->RemoveAllParticipant();
+        that->current_conference_info_->RemoveAllParticipant();
 
         auto users = room_info->get_map()["participants"]->get_vector();
         // Make sure |on_success| is triggered before any other events because
         // OnUserJoined and OnStreamAdded should be triggered after join a
         // conference.
         for (auto it = users.begin(); it != users.end(); ++it) {
-          TriggerOnUserJoined(*it, true);
+          that->TriggerOnUserJoined(*it, true);
         }
       }
       // Trigger OnStreamAdded for existed remote streams, and also fill in
@@ -384,18 +388,18 @@ void ConferenceClient::RequestConferenceInfo(
         RTC_LOG(LS_WARNING) << "Room info doesn't contain valid streams.";
       } else {
         //清除缓存的旧的流
-        current_conference_info_->RemoveAllStream();
+        that->current_conference_info_->RemoveAllStream();
 
         auto streams = room_info->get_map()["streams"]->get_vector();
         for (auto it = streams.begin(); it != streams.end(); ++it) {
           RTC_LOG(LS_INFO) << "Find streams in the conference.";
-          TriggerOnStreamAdded(*it, true);
+          that->TriggerOnStreamAdded(*it, true);
         }
       }
 
       if (on_success) {
-        event_queue_->PostTask(
-            [on_success, this]() { on_success(current_conference_info_); });
+        that->event_queue_->PostTask(
+            [on_success, that]() { on_success(that->current_conference_info_); });
       }
     },
     on_failure);
@@ -646,13 +650,12 @@ void ConferenceClient::ForceRemovePcc(const std::string& session_id) {
   subscribe_id_label_map_.erase(session_id);
 }
 void ConferenceClient::IceRestart(const std::string& session_id) {
-  RTC_LOG(LS_INFO) << "sll-------ConferenceClient::IceRestart----";
   std::lock_guard<std::mutex> subscribe_pcs_mutex_lock(subscribe_pcs_mutex_);
   std::find_if(subscribe_pcs_.begin(), subscribe_pcs_.end(),
       [&](std::shared_ptr<ConferencePeerConnectionChannel> o) -> bool {
         bool isExisted = (o->GetSessionId() == session_id);
         if (isExisted) {
-          RTC_LOG(LS_INFO) << "sll---subscribe_pcs_----IceRestartEx----";
+          RTC_LOG(LS_INFO) << "ConferenceClient::IceRestart::subsciption----success";
           o->IceRestartEx();
         }
         return isExisted;
@@ -663,7 +666,7 @@ void ConferenceClient::IceRestart(const std::string& session_id) {
       [&](std::shared_ptr<ConferencePeerConnectionChannel> o) -> bool {
         bool isExisted = (o->GetSessionId() == session_id);
         if (isExisted) {
-          RTC_LOG(LS_INFO) << "sll---publish_pcs_----IceRestartEx----";
+          RTC_LOG(LS_INFO) << "ConferenceClient::IceRestart::publication----success";
           o->IceRestartEx();
         }
         return isExisted;
@@ -903,6 +906,7 @@ void ConferenceClient::Leave(
     subscribe_pcs_.clear();
   }
   signaling_channel_->Disconnect(RunInEventQueue(on_success), on_failure);
+  signaling_channel_->RemoveObserver(*this);
 }
 void ConferenceClient::CloseSignalChannel() {
   if (signaling_channel_) {
@@ -1038,14 +1042,18 @@ void ConferenceClient::OnStreamError(sio::message::ptr stream) {
 void ConferenceClient::OnServerDisconnected() {
   signaling_channel_connected_ = false;
   {
-    std::lock_guard<std::mutex> lock(publish_pcs_mutex_);
-    publish_id_label_map_.clear();
-    publish_pcs_.clear();
+    if (publish_pcs_.size() > 0) {
+      std::lock_guard<std::mutex> lock(publish_pcs_mutex_);
+      publish_id_label_map_.clear();
+      publish_pcs_.clear();
+    }
   }
   {
-    std::lock_guard<std::mutex> lock(subscribe_pcs_mutex_);
-    subscribe_pcs_.clear();
-    subscribe_id_label_map_.clear();
+    if (subscribe_pcs_.size() > 0) {
+      std::lock_guard<std::mutex> lock(subscribe_pcs_mutex_);
+      subscribe_pcs_.clear();
+      subscribe_id_label_map_.clear();
+    }
   }
   for (auto its = observers_.begin(); its != observers_.end(); ++its) {
     (*its).get().OnServerDisconnected();
@@ -1778,7 +1786,7 @@ void ConferenceClient::TriggerOnStreamUpdated(sio::message::ptr stream_info) {
   auto stream_type = added_stream_type_.find(id);
   if (stream_it == added_streams_.end() ||
       stream_type == added_stream_type_.end()) {
-    RTC_DCHECK(false);
+//    RTC_DCHECK(false);
     RTC_LOG(LS_WARNING) << "Invalid stream or type.";
     return;
   }

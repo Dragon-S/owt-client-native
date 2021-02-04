@@ -134,6 +134,7 @@ class ConferenceSocketSignalingChannel
             const std::function<void(sio::message::list const&)> ack,
             const std::function<void(std::unique_ptr<Exception>)>
                 on_failure);
+  void DropQueuedMessagesNoCallback();
   // Clean message queue and triggered failure callback for all queued messages.
   void DropQueuedMessages();
   // Re-emit queued message.
@@ -143,6 +144,7 @@ class ConferenceSocketSignalingChannel
       const owt::base::Resolution& resolution);
   sio::client* socket_client_;
   std::vector<ConferenceSocketSignalingChannelObserver*> observers_;
+  std::mutex observer_mutex_;
   std::function<void(std::unique_ptr<Exception>)>
       connect_failure_callback_;
   std::function<void()> disconnect_complete_;

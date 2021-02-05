@@ -185,8 +185,10 @@ ConferenceClient::ConferenceClient(
       std::make_unique<rtc::TaskQueue>(task_queue_factory_->CreateTaskQueue(
           "ConferenceClientEventQueue",
           webrtc::TaskQueueFactory::Priority::NORMAL));
+  signaling_channel_->AddObserver(*this);
 }
 ConferenceClient::~ConferenceClient() {
+  signaling_channel_->RemoveObserver(*this);
 }
 void ConferenceClient::AddObserver(ConferenceClientObserver& observer) {
   const std::lock_guard<std::mutex> lock(observer_mutex_);
@@ -256,7 +258,6 @@ void ConferenceClient::Join(
                            "please pass it without modification.";
     token_base64 = rtc::Base64::Encode(token);
   }
-  signaling_channel_->AddObserver(*this);
   signaling_channel_->Connect(
       token_base64,
       [=](sio::message::ptr info) {
@@ -906,7 +907,6 @@ void ConferenceClient::Leave(
     subscribe_pcs_.clear();
   }
   signaling_channel_->Disconnect(RunInEventQueue(on_success), on_failure);
-  signaling_channel_->RemoveObserver(*this);
 }
 void ConferenceClient::CloseSignalChannel() {
   if (signaling_channel_) {
@@ -1055,8 +1055,11 @@ void ConferenceClient::OnServerDisconnected() {
       subscribe_id_label_map_.clear();
     }
   }
-  for (auto its = observers_.begin(); its != observers_.end(); ++its) {
-    (*its).get().OnServerDisconnected();
+
+  if (observers_.size() > 0) {
+    for (auto its = observers_.begin(); its != observers_.end(); ++its) {
+      (*its).get().OnServerDisconnected();
+    }
   }
 }
 

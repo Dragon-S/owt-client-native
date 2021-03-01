@@ -920,16 +920,20 @@ void ConferenceSocketSignalingChannel::TriggerOnServerDisconnected() {
 }
 
 void ConferenceSocketSignalingChannel::TriggerOnServerReconnecting() {
-  std::lock_guard<std::mutex> lock(observer_mutex_);
-  for (auto it = observers_.begin(); it != observers_.end(); ++it) {
-    (*it)->OnServerReconnecting();
+  if (observers_.size() > 0) {
+    std::lock_guard<std::mutex> lock(observer_mutex_);
+    for (auto it = observers_.begin(); it != observers_.end(); ++it) {
+      (*it)->OnServerReconnecting();
+    }
   }
 }
 
 void ConferenceSocketSignalingChannel::TriggerOnServerReconnectionSuccess() {
-  std::lock_guard<std::mutex> lock(observer_mutex_);
-  for (auto it = observers_.begin(); it != observers_.end(); ++it) {
-    (*it)->OnServerReconnectionSuccess();
+  if (observers_.size() > 0) {
+    std::lock_guard<std::mutex> lock(observer_mutex_);
+    for (auto it = observers_.begin(); it != observers_.end(); ++it) {
+      (*it)->OnServerReconnectionSuccess();
+    }
   }
 }
 

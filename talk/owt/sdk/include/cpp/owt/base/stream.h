@@ -42,7 +42,7 @@ class StreamObserver {
  public:
   /// Triggered when a stream is ended, or the stream is no longer available in
   /// conference mode.
-  virtual void OnEnded() {}
+  virtual void OnEnded(const bool is_host = false) {}
   /// Triggered when the stream info is updated in conference mode.
   virtual void OnUpdated() {}
   /// Triggered when the stream is muted
@@ -118,7 +118,7 @@ class Stream {
   virtual ~Stream();
   void Id(const std::string& id);
   void MediaStream(MediaStreamInterface* media_stream);
-  void TriggerOnStreamEnded();
+  void TriggerOnStreamEnded(const bool is_host = false);
   void TriggerOnStreamUpdated();
   void TriggerOnStreamMute(owt::base::TrackKind track_kind);
   void TriggerOnStreamUnmute(owt::base::TrackKind track_kind);

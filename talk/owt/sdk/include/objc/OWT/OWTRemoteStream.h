@@ -28,7 +28,7 @@ RTC_OBJC_EXPORT
 @protocol OWTRemoteStreamDelegate<NSObject>
 /// Triggered when a stream is ended, or the stream is no longer available in
 /// conference.
-- (void)streamDidEnd:(OWTRemoteStream*)stream;
+- (void)streamDidEnd:(OWTRemoteStream*)stream byHost:(BOOL)isHost;
 /// Triggered when a stream is updated.
 - (void)streamDidUpdate:(OWTRemoteStream*)stream;
 /// Triggered when stream is muted.

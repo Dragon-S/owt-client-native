@@ -56,6 +56,33 @@
   _publishedStreams = [[NSMutableDictionary alloc] init];
   return self;
 }
+- (instancetype)initWithConfiguration:
+    (OWTConferenceClientConfiguration*)config signalingChannel:(id<OWTConferenceSignalingChannelProtocol>)signalingChannel {
+  self = [super init];
+  owt::conference::ConferenceClientConfiguration* nativeConfig =
+      new owt::conference::ConferenceClientConfiguration();
+  std::vector<owt::base::IceServer> iceServers;
+  for (RTCIceServer* server in config.rtcConfiguration.iceServers) {
+    owt::base::IceServer iceServer;
+    iceServer.urls = server.nativeServer.urls;
+    iceServer.username = server.nativeServer.username;
+    iceServer.password = server.nativeServer.password;
+    iceServers.push_back(iceServer);
+  }
+  nativeConfig->ice_servers = iceServers;
+  nativeConfig->candidate_network_policy =
+      config.rtcConfiguration.candidateNetworkPolicy ==
+              RTCCandidateNetworkPolicyLowCost
+          ? owt::base::ClientConfiguration::CandidateNetworkPolicy::kLowCost
+          : owt::base::ClientConfiguration::CandidateNetworkPolicy::kAll;
+
+  std::shared_ptr<ConferenceSignalingChannelInterface> signalingChannelCpp(new ConferenceSocketIoSignalingChannelObjcImpl(signalingChannel));
+
+  _nativeConferenceClient =
+      owt::conference::ConferenceClient::Create(*nativeConfig, signalingChannelCpp);
+  _publishedStreams = [[NSMutableDictionary alloc] init];
+  return self;
+}
 - (void)triggerOnFailure:(void (^)(NSError*))onFailure
            withException:
                (std::unique_ptr<owt::base::Exception>)e {

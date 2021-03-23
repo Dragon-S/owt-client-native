@@ -348,10 +348,10 @@ void Stream::RemoveObserver(StreamObserver& observer) {
   if (it != observers_.end())
     observers_.erase(it);
 }
-void Stream::TriggerOnStreamEnded() {
+void Stream::TriggerOnStreamEnded(const bool is_host) {
   ended_ = true;
   for (auto its = observers_.begin(); its != observers_.end(); ++its) {
-    (*its).get().OnEnded();
+    (*its).get().OnEnded(is_host);
   }
 }
 void Stream::TriggerOnStreamUpdated() {

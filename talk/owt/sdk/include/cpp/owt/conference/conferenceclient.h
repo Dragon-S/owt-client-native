@@ -136,7 +136,7 @@ class ConferenceInfo {
     // Trigger participant left event.
     void TriggerOnParticipantLeft(const std::string& participant_id);
     // Trigger stream ended event.
-    void TriggerOnStreamEnded(const std::string& stream_id);
+    void TriggerOnStreamEnded(const std::string& stream_id, const bool is_host);
     // Trigger stream updated event.
     void TriggerOnStreamUpdated(const std::string& stream_id);
     // Trigger stream mute/unmute events

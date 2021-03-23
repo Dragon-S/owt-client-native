@@ -134,10 +134,10 @@ void ConferenceInfo::TriggerOnParticipantLeft(
     }
   }
 }
-void ConferenceInfo::TriggerOnStreamEnded(const std::string& stream_id) {
+void ConferenceInfo::TriggerOnStreamEnded(const std::string& stream_id, const bool is_host) {
   for (auto& it : remote_streams_) {
     if (it->Id() == stream_id) {
-      it->TriggerOnStreamEnded();
+      it->TriggerOnStreamEnded(is_host);
       break;
     }
   }
@@ -1755,9 +1755,10 @@ void ConferenceClient::TriggerOnStreamRemoved(sio::message::ptr stream_info) {
     RTC_LOG(LS_WARNING) << "Invalid stream or type.";
     return;
   }
+  bool is_host = stream_info->get_map()["isHost"]->get_bool();
   added_streams_.erase(stream_it);
   added_stream_type_.erase(stream_type);
-  current_conference_info_->TriggerOnStreamEnded(id);
+  current_conference_info_->TriggerOnStreamEnded(id, is_host);
   current_conference_info_->RemoveStreamById(id);
   const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
   for (auto its = stream_update_observers_.begin();

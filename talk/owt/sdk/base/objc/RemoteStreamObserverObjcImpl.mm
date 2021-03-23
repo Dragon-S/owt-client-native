@@ -13,9 +13,9 @@ RemoteStreamObserverObjcImpl::RemoteStreamObserverObjcImpl(
   RTC_CHECK(stream);
   RTC_CHECK(delegate);
 }
-void RemoteStreamObserverObjcImpl::OnEnded() {
-  if ([delegate_ respondsToSelector:@selector(streamDidEnd:)]) {
-    [delegate_ streamDidEnd:stream_];
+void RemoteStreamObserverObjcImpl::OnEnded(const bool isHost) {
+  if ([delegate_ respondsToSelector:@selector(streamDidEnd:byHost:)]) {
+    [delegate_ streamDidEnd:stream_ byHost:(BOOL)isHost];
   }
 }
 void RemoteStreamObserverObjcImpl::OnUpdated() {

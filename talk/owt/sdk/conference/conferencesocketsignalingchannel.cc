@@ -377,9 +377,14 @@ void ConferenceSocketSignalingChannel::OnNotificationFromServer(
           (*it)->OnStreamUpdated(update_message);
         }
       } else if (stream_status == "remove") {
+        bool is_host = false;
+        if (data->get_map()["isHost"]) {
+          is_host = data->get_map()["isHost"]->get_bool();
+        }
         sio::message::ptr remove_message = sio::object_message::create();
         remove_message->get_map()["id"] =
             sio::string_message::create(stream_id);
+        remove_message->get_map()["isHost"] = sio::bool_message::create(is_host);
         std::lock_guard<std::mutex> lock(observer_mutex_);
         for (auto it = observers_.begin(); it != observers_.end(); ++it) {
           (*it)->OnStreamRemoved(remove_message);

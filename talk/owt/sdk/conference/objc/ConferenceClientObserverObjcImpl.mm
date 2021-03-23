@@ -120,6 +120,12 @@ void ConferenceClientObserverObjcImpl::OnServerUpdateConferenceInfoSuccess(std::
     [delegate_ conferenceClient:client_ updateConferenceInfoSuccess:[[OWTConferenceInfo alloc] initWithNativeInfo:info]];
   }
 }
+void ConferenceClientObserverObjcImpl::OnActiveInputChanged(const std::string& stream_id) {
+  if ([delegate_
+          respondsToSelector:@selector(conferenceClient:streamDidChangeActiveInput:)]) {
+    [delegate_ conferenceClient:client_ streamDidChangeActiveInput:[NSString stringForStdString:stream_id]];
+  }
+}
 void ConferenceClientObserverObjcImpl::OnSipAndPstnJoin(const std::string& info) {
   if ([delegate_
           respondsToSelector:@selector(conferenceClient:sipAndPstnJoin:)]) {

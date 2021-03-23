@@ -436,7 +436,12 @@ void ConferenceSocketSignalingChannel::OnNotificationFromServer(
     }
   }
 }
-
+void ConferenceSocketSignalingChannel::CloseSocket() {
+  if (socket_client_->opened()) {
+    DropQueuedMessages();
+    socket_client_->close();
+  }
+}
 void ConferenceSocketSignalingChannel::SendSubscriptionUpdateMessage(
   sio::message::ptr options,
   std::function<void()> on_success,

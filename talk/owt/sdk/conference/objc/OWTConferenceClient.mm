@@ -292,6 +292,11 @@ PlayPauseFailureCallback(FailureBlock on_failure,
         [weakSelf triggerOnFailure:onFailure withException:(std::move(e))];
       });
 }
+- (void)closeClientSignalChannel {
+  if (_nativeConferenceClient) {
+    _nativeConferenceClient->CloseSignalChannel();
+  }
+}
 - (void)setDelegate:(id<OWTConferenceClientDelegate>)delegate {
   if (delegate != nil) {
     __weak OWTConferenceClient *weakSelf = self;

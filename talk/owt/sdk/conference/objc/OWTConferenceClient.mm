@@ -265,6 +265,26 @@
         [weakSelf triggerOnFailure:onFailure withException:(std::move(e))];
       });
 }
+- (void)send:(NSString*)command
+      message:(NSString*)message
+    onSuccess:(void (^)(id))onSuccess
+    onFailure:(void (^)(NSError*))onFailure {
+  _nativeConferenceClient->Send(
+      [command UTF8String],
+      [message UTF8String],
+      [=] (std::shared_ptr<std::string> e) {
+        NSString *receiveData = nil;
+        if (e) {
+          receiveData = [NSString stringWithCString:e.get()->c_str() encoding:NSUTF8StringEncoding];
+        }
+        if (onSuccess != nil) {
+          onSuccess(receiveData);
+        }
+      },
+      [=] (std::unique_ptr<owt::base::Exception> e) {
+        [self triggerOnFailure:onFailure withException:(std::move(e))];
+      });
+}
 typedef void (^SuccessBlock)();
 std::function<void()> PlayPauseSuccessCallback(SuccessBlock on_success) {
   return [=]() {

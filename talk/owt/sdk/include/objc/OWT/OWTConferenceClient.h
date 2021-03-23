@@ -79,6 +79,15 @@ RTC_OBJC_EXPORT
     onSuccess:(nullable void (^)())onSuccess
     onFailure:(nullable void (^)(NSError*))onFailure;
 /**
+  @brief 发送章鱼自定义消息给服务端
+  @param command 命令名
+  @param message 消息体
+*/
+- (void)send:(NSString*)command
+      message:(NSString*)message
+    onSuccess:(void (^)(id))onSuccess
+    onFailure:(void (^)(NSError*))onFailure;
+/**
   @brief Leave current conference.
 */
 - (void)leaveWithOnSuccess:(nullable void (^)())onSuccess

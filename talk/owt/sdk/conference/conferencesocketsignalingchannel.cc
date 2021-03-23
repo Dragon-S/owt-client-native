@@ -579,6 +579,66 @@ void ConferenceSocketSignalingChannel::SendCustomMessage(
        },
        on_failure);
 }
+void ConferenceSocketSignalingChannel::SendCommandMessage(
+    const std::string& command,
+    const std::string& message,
+    std::function<void(sio::message::ptr receiveData)> on_success,
+    std::function<void(std::unique_ptr<Exception>)> on_failure) {
+  sio::message::ptr send_message = sio::object_message::create();
+  send_message->get_map()["message"] = sio::string_message::create(message);
+  std::weak_ptr<ConferenceSocketSignalingChannel> weak_this =
+      shared_from_this();
+  Emit(command, send_message,
+    [weak_this, on_success, on_failure](sio::message::list const& msg) {
+      auto that = weak_this.lock();
+      if (that == nullptr) {
+        if (on_failure != nullptr) {
+          std::unique_ptr<Exception> e(new Exception(
+                     ExceptionType::kConferenceInvalidParam,
+                     "Signaling channel was destroyed before ack."));
+                 on_failure(std::move(e));
+        }
+        return;
+      }
+
+      sio::message::ptr ack = msg.at(0);
+      if (ack->get_flag() != sio::message::flag_string) {
+        RTC_LOG(LS_WARNING) << "The first element of emit ack is not a string.";
+        if (on_failure) {
+          std::unique_ptr<Exception> e(
+              new Exception(ExceptionType::kConferenceInvalidParam,
+                            "Received unknown message from server."));
+          on_failure(std::move(e));
+        }
+        return;
+      }
+
+      if (ack->get_string() == "success" || ack->get_string() == "ok") {
+        if (on_success != nullptr) {
+          std::thread t([on_success, ack] () {
+            on_success(ack);
+          });
+          t.detach();
+        }
+      } else {
+        RTC_LOG(LS_WARNING) << "Send message to MCU received negative ack.";
+        if (msg.size() > 1) {
+          sio::message::ptr error_ptr = msg.at(1);
+          if (error_ptr->get_flag() == sio::message::flag_string) {
+            RTC_LOG(LS_WARNING) << "Detail negative ack message: "
+                            << error_ptr->get_string();
+          }
+        }
+        if (on_failure != nullptr) {
+          std::unique_ptr<Exception> e(
+              new Exception(ExceptionType::kConferenceInvalidParam,
+                            "Negative acknowledgment from server."));
+          on_failure(std::move(e));
+        }
+      }
+    },
+    on_failure);
+}
 void ConferenceSocketSignalingChannel::SendStreamControlMessage(
     const std::string& stream_id,
     const std::string& action,

@@ -34,6 +34,11 @@ class ConferenceSocketSignalingChannel {
       const std::string& receiver,
       std::function<void()> on_success,
       std::function<void(std::unique_ptr<Exception>)> on_failure) = 0;
+  virtual void SendCommandMessage(
+      const std::string& command,
+      const std::string& message,
+      std::function<void(sio::message::ptr receiveData)> on_success,
+      std::function<void(std::unique_ptr<Exception>)> on_failure) = 0;
   virtual void SendStreamControlMessage(
       const std::string& stream_id,
       const std::string& action,

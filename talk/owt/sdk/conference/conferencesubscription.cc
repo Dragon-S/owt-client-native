@@ -221,7 +221,16 @@ void ConferenceSubscription::OnStreamRemoved(const std::string& stream_id) {
     return;
   // Stop(); //配服务端的apply机制，不停止pc，因为stop后会释放pc。服务端的apply机制：apply后服务端后给pc配置新的流，无需释放pc
 }
+void ConferenceSubscription::OnServerFailed(const std::string& peer_id, const std::string& error_msg) {
+  if (ended_ || peer_id != id_)
+    return;
 
+  for (auto its = observers_.begin(); its != observers_.end(); ++its) {
+    std::unique_ptr<Exception> e(
+        new Exception(ExceptionType::kConferenceServerException, error_msg));
+    (*its).get().OnError(std::move(e));
+  }
+}
 void ConferenceSubscription::OnStreamError(const std::string& error_msg) {
   for (auto its = observers_.begin(); its != observers_.end(); ++its) {
     std::unique_ptr<Exception> e(

@@ -1012,6 +1012,16 @@ void ConferenceClient::OnSignalingMessage(sio::message::ptr message) {
   } else if (soac_status->get_string() == "error") {
     sio::message::ptr failure_msg = sio::string_message::create("failure");
     pcc->OnSignalingMessage(failure_msg);
+
+    //专门处理服务端peer异常
+    //通知 Publication or Subscription服务端ice Failed或者Access node
+    std::string peer_id = stream_id;
+    const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
+    for (auto its = stream_update_observers_.begin();
+         its != stream_update_observers_.end(); ++its) {
+      (*its).get().OnServerFailed(peer_id, "Server ice failed or Access node");
+    }
+
     return;
   }
   auto soac_data = message->get_map()["data"];

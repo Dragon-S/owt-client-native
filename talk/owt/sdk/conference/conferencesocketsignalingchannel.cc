@@ -484,6 +484,10 @@ void ConferenceSocketSignalingChannel::SendInitializationMessage(
            return;
          }
          if (message->get_string() == "ok") {
+           if (msg.size() < 2) {
+             RTC_LOG(LS_WARNING) << "msg 中的数据错误！！！";
+             return;
+           }
            if (msg.at(1)->get_flag() != sio::message::flag_object) {
              RTC_DCHECK(false);
              return;

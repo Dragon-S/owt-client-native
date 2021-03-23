@@ -111,6 +111,8 @@ class ConferenceSocketSignalingChannel
   void OnNotificationFromServer(const std::string& name,
                                 sio::message::ptr const& data);
   void RefreshReconnectionTicket();
+  void TriggerOnServerReconnecting();
+  void TriggerOnServerReconnectionSuccess();
   void TriggerOnServerDisconnected();
   void Emit(const std::string& name,
             const sio::message::list& message,

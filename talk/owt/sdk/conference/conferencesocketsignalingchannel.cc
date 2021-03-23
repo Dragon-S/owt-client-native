@@ -63,8 +63,9 @@ const std::string kEventNameConnectionFailed = "connection_failed";
 // 00:00:00.
 const uint64_t kMachLinuxTimeDelta = 978307200;
 #endif
-const int kReconnectionAttempts = 10;
+const int kReconnectionAttempts = 14;
 const int kReconnectionDelay = 2000;
+const int kReconnectionDelayMax = 5000;
 ConferenceSocketSignalingChannel::ConferenceSocketSignalingChannel()
     : socket_client_(new sio::client()),
       reconnection_ticket_(""),
@@ -135,6 +136,7 @@ void ConferenceSocketSignalingChannel::Connect(
   socket_client_->socket();
   socket_client_->set_reconnect_attempts(kReconnectionAttempts);
   socket_client_->set_reconnect_delay(kReconnectionDelay);
+  socket_client_->set_reconnect_delay_max(kReconnectionDelayMax);
   socket_client_->set_socket_close_listener(
       [weak_this](std::string const& nsp) {
         RTC_LOG(LS_INFO) << "Socket.IO disconnected.";
@@ -163,6 +165,7 @@ void ConferenceSocketSignalingChannel::Connect(
         // fail (fail listener).
         that->is_reconnection_ = true;
         that->reconnection_attempted_++;
+        that->TriggerOnServerReconnecting();
       }
     }
   });
@@ -276,6 +279,7 @@ void ConferenceSocketSignalingChannel::Connect(
               OnReconnectionTicket(message->get_string());
             }
             RTC_LOG(LS_VERBOSE) << "Reconnection success";
+            TriggerOnServerReconnectionSuccess();
             DrainQueuedMessages();
           });
     }
@@ -742,6 +746,16 @@ void ConferenceSocketSignalingChannel::TriggerOnServerDisconnected() {
   std::lock_guard<std::mutex> lock(observer_mutex_);
   for (auto it = observers_.begin(); it != observers_.end(); ++it) {
     (*it)->OnServerDisconnected();
+  }
+}
+void ConferenceSocketSignalingChannel::TriggerOnServerReconnecting() {
+  for (auto it = observers_.begin(); it != observers_.end(); ++it) {
+    (*it)->OnServerReconnecting();
+  }
+}
+void ConferenceSocketSignalingChannel::TriggerOnServerReconnectionSuccess() {
+  for (auto it = observers_.begin(); it != observers_.end(); ++it) {
+    (*it)->OnServerReconnectionSuccess();
   }
 }
 void ConferenceSocketSignalingChannel::Emit(

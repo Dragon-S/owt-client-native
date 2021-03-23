@@ -218,12 +218,12 @@ void ConferenceSocketSignalingChannel::Connect(
                  msg.at(0);  // The first element indicates the state.
              std::string state = ack->get_string();
              if (state == "error" || state == "timeout") {
+               std::string errMsg = "Received error message from server.(state = " + state + ")";
                RTC_LOG(LS_ERROR) << "Server returns " << state
                              << " while joining a conference.";
                if (on_failure != nullptr) {
                  std::unique_ptr<Exception> e(new Exception(
-                     ExceptionType::kConferenceInvalidParam,
-                     "Received error message from server."));
+                  ExceptionType::kConferenceInvalidParam, errMsg));
                  on_failure(std::move(e));
                }
                return;

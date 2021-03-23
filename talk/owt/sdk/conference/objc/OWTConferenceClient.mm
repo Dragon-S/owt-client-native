@@ -116,6 +116,18 @@
   std::shared_ptr<owt::conference::ConferenceInfo> info = _nativeConferenceClient->getConferenceInfo();
   return [[OWTConferenceInfo alloc] initWithNativeInfo:info];
 }
+- (void)requestParticipantsList:(nullable void (^)(NSString* participants))onSuccess
+                    onFailure:(nullable void (^)(NSError*))onFailure {
+  __weak OWTConferenceClient *weakSelf = self;
+  _nativeConferenceClient->RequestParticipantsList(
+      [=](std::shared_ptr<std::string> participantsListStr) {
+        if (onSuccess != nil && participantsListStr != nullptr)
+          onSuccess([NSString stringWithCString:participantsListStr.get()->c_str() encoding:NSUTF8StringEncoding]);
+      },
+      [=](std::unique_ptr<owt::base::Exception> e) {
+        [weakSelf triggerOnFailure:onFailure withException:(std::move(e))];
+      });
+}
 - (void)publish:(OWTLocalStream*)stream
     withOptions:(OWTPublishOptions*)options
       onSuccess:(void (^)(OWTConferencePublication*))onSuccess

@@ -14,6 +14,8 @@
 #import "talk/owt/sdk/conference/objc/OWTConferenceParticipant+Private.h"
 #import "talk/owt/sdk/conference/objc/OWTConferenceClient+Internal.h"
 #import "webrtc/sdk/objc/Framework/Classes/Common/NSString+StdString.h"
+#import "talk/owt/sdk/include/objc/OWT/OWTConferenceInfo.h"
+#import "talk/owt/sdk/conference/objc/OWTConferenceInfo+Private.h"
 namespace owt {
 namespace conference {
 ConferenceClientObserverObjcImpl::ConferenceClientObserverObjcImpl(
@@ -110,6 +112,12 @@ void ConferenceClientObserverObjcImpl::OnServerReconnectionSuccess() {
   if ([delegate_
           respondsToSelector:@selector(conferenceClientReconnectionSuccess:)]) {
     [delegate_ conferenceClientReconnectionSuccess:client_];
+  }
+}
+void ConferenceClientObserverObjcImpl::OnServerUpdateConferenceInfoSuccess(std::shared_ptr<ConferenceInfo> info) {
+  if ([delegate_
+          respondsToSelector:@selector(conferenceClient:updateConferenceInfoSuccess:)]) {
+    [delegate_ conferenceClient:client_ updateConferenceInfoSuccess:[[OWTConferenceInfo alloc] initWithNativeInfo:info]];
   }
 }
 }

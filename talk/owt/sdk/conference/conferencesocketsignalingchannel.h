@@ -113,6 +113,7 @@ class ConferenceSocketSignalingChannel
   void RefreshReconnectionTicket();
   void TriggerOnServerReconnecting();
   void TriggerOnServerReconnectionSuccess();
+  void TriggerOnServerUpdateConferenceInfoSuccess();
   void TriggerOnServerDisconnected();
   void Emit(const std::string& name,
             const sio::message::list& message,

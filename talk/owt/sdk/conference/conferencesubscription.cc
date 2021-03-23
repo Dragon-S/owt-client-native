@@ -146,6 +146,11 @@ void ConferenceSubscription::ApplyOptions(
       });
     }
   } else {
+    if (options.video.changedStreamId != "") {
+      that->UpdateSubscription(id_, options.video.changedStreamId, options, on_success, on_failure);
+      return;
+    }
+
     that->UpdateSubscription(id_, stream_id_, options, on_success, on_failure);
   }
 }
@@ -198,7 +203,7 @@ void ConferenceSubscription::OnStreamMuteOrUnmute(const std::string& stream_id,
 void ConferenceSubscription::OnStreamRemoved(const std::string& stream_id) {
   if (ended_ || stream_id != stream_id_)
     return;
-  Stop();
+  // Stop(); //配服务端的apply机制，不停止pc，因为stop后会释放pc。服务端的apply机制：apply后服务端后给pc配置新的流，无需释放pc
 }
 
 void ConferenceSubscription::OnStreamError(const std::string& error_msg) {

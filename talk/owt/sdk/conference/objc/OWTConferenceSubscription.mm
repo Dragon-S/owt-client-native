@@ -221,6 +221,7 @@
       owt::base::Resolution(_resolution.width, _resolution.height);
   constrains->frameRate = _frameRate;
   constrains->bitrateMultiplier = _bitrateMultiplier;
+  constrains->changedStreamId = [NSString stdStringForString:_changedStreamId];
   constrains->keyFrameInterval = _keyFrameInterval;
   return constrains;
 }

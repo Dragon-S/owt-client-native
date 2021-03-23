@@ -23,11 +23,16 @@ RTC_OBJC_EXPORT
 /// Subscription encountered an ICE failure or server failure, and cannot be used anymore.
 - (void)subscriptionDidError:(OWTConferenceSubscription*)subscription
                     errorInfo:(NSError*)error;
+/// ice failed
+- (void)subscriptionIceStateChange:(OWTConferenceSubscription*)subscription
+                             state:(const int)state;
 @end
 RTC_OBJC_EXPORT
 @interface OWTConferenceSubscription : NSObject
 - (instancetype)init NS_UNAVAILABLE;
 - (void)forceRemovePcc;
+/// 重启ICE
+- (void)iceRestart;
 /// Stop certain subscription. Once a subscription is stopped, it cannot be recovered.
 - (void)stop;
 /// Stop reeving data from remote endpoint.

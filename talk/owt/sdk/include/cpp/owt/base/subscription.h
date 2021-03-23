@@ -18,6 +18,8 @@ class SubscriptionObserver {
     virtual void OnUnmute(TrackKind track_kind) = 0;
     /// Triggered when error happens with subscription.
     virtual void OnError(std::unique_ptr<owt::base::Exception> error) = 0;
+    /// ice state change
+    virtual void OnIceStateChange(const int) = 0;
 };
 } // namespace base
 } // namespace owt

@@ -71,6 +71,12 @@ ConferencePeerConnectionChannel::ConferencePeerConnectionChannel(
       event_queue_(event_queue) {
   InitializePeerConnection();
   RTC_CHECK(signaling_channel_);
+  webrtc::MediaConstraints::Constraints mandatory;
+  webrtc::MediaConstraints::Constraints optional;
+  mandatory.push_back(webrtc::MediaConstraints::Constraint(webrtc::MediaConstraints::kIceRestart, webrtc::MediaConstraints::kValueFalse));
+
+  webrtc::MediaConstraints *mediaConstraints = new webrtc::MediaConstraints(mandatory, optional);
+  media_constraints_ = std::unique_ptr<webrtc::MediaConstraints>(mediaConstraints);
 }
 ConferencePeerConnectionChannel::~ConferencePeerConnectionChannel() {
   RTC_LOG(LS_INFO) << "Deconstruct conference peer connection channel";
@@ -111,8 +117,9 @@ void ConferencePeerConnectionChannel::CreateOffer() {
           std::bind(&ConferencePeerConnectionChannel::
                         OnCreateSessionDescriptionFailure,
                     this, std::placeholders::_1));
-  peer_connection_->CreateOffer(
-      observer, webrtc::PeerConnectionInterface::RTCOfferAnswerOptions());
+  webrtc::PeerConnectionInterface::RTCOfferAnswerOptions offerAnswerOptions;
+  webrtc::CopyConstraintsIntoOfferAnswerOptions(media_constraints_.get(), &offerAnswerOptions);
+  peer_connection_->CreateOffer(observer, offerAnswerOptions);
 }
 void ConferencePeerConnectionChannel::IceRestart() {
   if (SignalingState() == PeerConnectionInterface::SignalingState::kStable) {
@@ -132,6 +139,49 @@ void ConferencePeerConnectionChannel::DoIceRestart() {
   */
   this->CreateOffer();
 }
+void ConferencePeerConnectionChannel::SetIceRestartConstraint(bool iceRestart) {
+  std::string strBool = iceRestart ? webrtc::MediaConstraints::kValueTrue : webrtc::MediaConstraints::kValueFalse;
+  bool existed = false;
+  webrtc::MediaConstraints::Constraints oldMandatory = media_constraints_->GetMandatory();
+  for (webrtc::MediaConstraints::Constraints::const_iterator iter = oldMandatory.begin();
+    iter != oldMandatory.end(); iter++) {
+    if (iter->key == webrtc::MediaConstraints::kIceRestart && iter->value == strBool) {
+      existed = true;
+      break;
+    }
+  }
+
+  if (!existed) {
+    return;
+  }
+
+  webrtc::MediaConstraints::Constraints newMandatory;
+  for (webrtc::MediaConstraints::Constraints::const_iterator iter = oldMandatory.begin();
+    iter != oldMandatory.end(); iter++) {
+    if (iter->key == webrtc::MediaConstraints::kIceRestart) {
+      newMandatory.push_back(webrtc::MediaConstraints::Constraint(webrtc::MediaConstraints::kIceRestart, strBool));
+    } else {
+      newMandatory.push_back(webrtc::MediaConstraints::Constraint(iter->key, iter->value));
+    }
+  }
+
+  std::unique_ptr<webrtc::MediaConstraints> newMediaConstraints(new webrtc::MediaConstraints(newMandatory, media_constraints_->GetOptional()));
+  media_constraints_ = std::move(newMediaConstraints);
+}
+void ConferencePeerConnectionChannel::IceRestartEx() {
+  if (SignalingState() == PeerConnectionInterface::SignalingState::kStable) {
+    RTC_LOG(LS_INFO) << "IceRestartEx----success";
+
+    SetIceRestartConstraint(true);
+
+    //清除旧的ice
+    std::lock_guard<std::mutex> lock(candidates_mutex_);
+    ice_candidates_.clear();
+
+    //重新ice 协商
+    this->CreateOffer();
+  }
+}
 void ConferencePeerConnectionChannel::CreateAnswer() {
   RTC_LOG(LS_INFO) << "Create answer.";
   scoped_refptr<FunctionalCreateSessionDescriptionObserver> observer =
@@ -142,8 +192,9 @@ void ConferencePeerConnectionChannel::CreateAnswer() {
           std::bind(&ConferencePeerConnectionChannel::
                         OnCreateSessionDescriptionFailure,
                     this, std::placeholders::_1));
-  peer_connection_->CreateAnswer(
-      observer, webrtc::PeerConnectionInterface::RTCOfferAnswerOptions());
+  webrtc::PeerConnectionInterface::RTCOfferAnswerOptions offerAnswerOptions;
+  webrtc::CopyConstraintsIntoOfferAnswerOptions(media_constraints_.get(), &offerAnswerOptions);
+  peer_connection_->CreateAnswer(observer, offerAnswerOptions);
 }
 void ConferencePeerConnectionChannel::OnSignalingChange(
     PeerConnectionInterface::SignalingState new_state) {
@@ -151,12 +202,12 @@ void ConferencePeerConnectionChannel::OnSignalingChange(
   signaling_state_ = new_state;
   if (new_state == webrtc::PeerConnectionInterface::SignalingState::kStable) {
     if (ice_restart_needed_) {
-      ice_restart_needed_ = false;
-      {
-        std::lock_guard<std::mutex> lock(candidates_mutex_);
-        ice_candidates_.clear();
-      }
-      DoIceRestart();
+      // ice_restart_needed_ = false;
+      // {
+      //   std::lock_guard<std::mutex> lock(candidates_mutex_);
+      //   ice_candidates_.clear();
+      // }
+      // DoIceRestart();
     } else {
       DrainIceCandidates();
     }
@@ -973,17 +1024,24 @@ void ConferencePeerConnectionChannel::OnStreamError(
     RTC_LOG(LS_INFO) << "On stream error.";
     (*its).get().OnStreamError(error_stream, e);
   }
-  if (published_stream_) {
-    Unpublish(GetSessionId(), nullptr, nullptr);
-    error_stream = published_stream_;
-  }
-  if (subscribed_stream_) {
-    Unsubscribe(GetSessionId(), nullptr, nullptr);
-    error_stream = subscribed_stream_;
-  }
-  if (error_stream == nullptr) {
-    RTC_DCHECK(false);
-    return;
+  //禁止关闭peer
+  // if (published_stream_) {
+  //   Unpublish(GetSessionId(), nullptr, nullptr);
+  //   error_stream = published_stream_;
+  // }
+  // if (subscribed_stream_) {
+  //   Unsubscribe(GetSessionId(), nullptr, nullptr);
+  //   error_stream = subscribed_stream_;
+  // }
+  // if (error_stream == nullptr) {
+  //   RTC_DCHECK(false);
+  //   return;
+  // }
+}
+void ConferencePeerConnectionChannel::OnIceStateChange(const int state) {
+  std::shared_ptr<Stream> error_stream;
+  for (auto its = observers_.begin(); its != observers_.end(); ++its) {
+    (*its).get().OnIceStateChange(error_stream, state);
   }
 }
 std::function<void()> ConferencePeerConnectionChannel::RunInEventQueue(

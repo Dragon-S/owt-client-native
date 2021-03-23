@@ -20,6 +20,8 @@ class PublicationObserver {
   virtual void OnUnmute(TrackKind track_kind) = 0;
   /// Triggered when an error occured on the publication.
   virtual void OnError(std::unique_ptr<Exception> failure) = 0;
+  /// ice state change
+  virtual void OnIceStateChange(const int state) = 0;
 };
 class Publication {
  public:

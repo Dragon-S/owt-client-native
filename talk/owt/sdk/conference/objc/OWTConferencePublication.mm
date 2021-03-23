@@ -25,6 +25,9 @@
 - (void)stop {
   _nativePublication->Stop();
 }
+- (void)iceRestart {
+  _nativePublication->IceRestart();
+}
 - (void)statsWithOnSuccess:(void (^)(NSArray<RTCLegacyStatsReport*>*))onSuccess
                  onFailure:(nullable void (^)(NSError*))onFailure {
   RTC_CHECK(onSuccess);

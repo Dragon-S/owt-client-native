@@ -17,6 +17,7 @@ public:
     owt::base::TrackKind track_kind, bool muted) {}
   virtual void OnStreamRemoved(const std::string& stream_id) {}
   virtual void OnStreamError(const std::string& error_msg){}
+  virtual void OnIceStateChange(const int state){}
 };
 /** @endcond */
 }

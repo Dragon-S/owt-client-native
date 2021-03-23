@@ -47,5 +47,11 @@ void ConferencePublicationObserverObjcImpl::OnError(
                     errorInfo:err];
   }
 }
+void ConferencePublicationObserverObjcImpl::OnIceStateChange(const int state) {
+  if ([delegate_
+          respondsToSelector:@selector(publicationIceStateChange:state:)]) {
+    [delegate_ publicationIceStateChange:publication_ state:state];
+  }
+}
 }
 }

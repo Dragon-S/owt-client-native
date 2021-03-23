@@ -1121,6 +1121,17 @@ void ConferenceClient::OnServerUpdateConferenceInfoSuccess(sio::message::ptr inf
     (*its).get().OnServerUpdateConferenceInfoSuccess(current_conference_info_);
   }
 }
+void ConferenceClient::OnSipAndPstnJoin(std::shared_ptr<sio::message> info) {
+  if ((info == nullptr ||
+      info->get_flag() != sio::message::flag_string)) {
+    RTC_LOG(LS_INFO) << "消息类型错误！！！";
+    return;
+  }
+
+  for (auto its = observers_.begin(); its != observers_.end(); ++its) {
+    (*its).get().OnSipAndPstnJoin(info->get_string());
+  }
+}
 void ConferenceClient::OnStreamError(
     std::shared_ptr<Stream> stream,
     std::shared_ptr<const Exception> exception) {

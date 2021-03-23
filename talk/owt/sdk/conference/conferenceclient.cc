@@ -334,6 +334,64 @@ void ConferenceClient::Join(
       },
       on_failure);
 }
+void ConferenceClient::RequestConferenceInfo(
+    std::function<void(std::shared_ptr<ConferenceInfo>)> on_success,
+    std::function<void(std::unique_ptr<Exception>)> on_failure) {
+  if (signaling_channel_connected_) {
+    signaling_channel_->RequestConferenceInfo(
+      [=](sio::message::ptr info) {
+              auto room_info = info->get_map()["room"];
+      if (room_info == nullptr ||
+          room_info->get_flag() != sio::message::flag_object) {
+        RTC_DCHECK(false);
+        return;
+      }
+      if (room_info->get_map()["id"]->get_flag() !=
+          sio::message::flag_string) {
+        RTC_DCHECK(false);
+        return;
+      } else {
+        current_conference_info_->id_ =
+            room_info->get_map()["id"]->get_string();
+      }
+      // Trigger OnUserJoin for existed users, and also fill in the
+      // ConferenceInfo.
+      if (room_info->get_map()["participants"]->get_flag() !=
+          sio::message::flag_array) {
+        RTC_LOG(LS_WARNING) << "Room info doesn't contain valid users.";
+      } else {
+        auto users = room_info->get_map()["participants"]->get_vector();
+        // Make sure |on_success| is triggered before any other events because
+        // OnUserJoined and OnStreamAdded should be triggered after join a
+        // conference.
+        for (auto it = users.begin(); it != users.end(); ++it) {
+          TriggerOnUserJoined(*it, true);
+        }
+      }
+      // Trigger OnStreamAdded for existed remote streams, and also fill in
+      // the ConferenceInfo.
+      if (room_info->get_map()["streams"]->get_flag() !=
+          sio::message::flag_array) {
+        RTC_LOG(LS_WARNING) << "Room info doesn't contain valid streams.";
+      } else {
+        auto streams = room_info->get_map()["streams"]->get_vector();
+        for (auto it = streams.begin(); it != streams.end(); ++it) {
+          RTC_LOG(LS_INFO) << "Find streams in the conference.";
+          TriggerOnStreamAdded(*it, true);
+        }
+      }
+
+      if (on_success) {
+        event_queue_->PostTask(
+            [on_success, this]() { on_success(current_conference_info_); });
+      }
+    },
+    on_failure);
+  }
+}
+std::shared_ptr<ConferenceInfo> ConferenceClient::getConferenceInfo() {
+  return current_conference_info_;
+}
 void ConferenceClient::Publish(
     std::shared_ptr<LocalStream> stream,
     std::function<void(std::shared_ptr<ConferencePublication>)> on_success,

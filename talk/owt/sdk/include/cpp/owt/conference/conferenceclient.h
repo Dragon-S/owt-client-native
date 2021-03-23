@@ -255,6 +255,16 @@ class ConferenceClient final
       std::function<void(std::shared_ptr<ConferenceInfo>)> on_success,
       std::function<void(std::unique_ptr<Exception>)> on_failure);
   /**
+    @brief 请求会议信息.
+  */
+  void RequestConferenceInfo(
+      std::function<void(std::shared_ptr<ConferenceInfo>)> on_success,
+      std::function<void(std::unique_ptr<Exception>)> on_failure);
+  /**
+    @brief 获取会议信息.
+  */
+  std::shared_ptr<ConferenceInfo> getConferenceInfo();
+  /**
     @brief Leave current conference.
   */
   void Leave(

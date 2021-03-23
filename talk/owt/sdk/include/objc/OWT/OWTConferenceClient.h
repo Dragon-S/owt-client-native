@@ -31,6 +31,11 @@ RTC_OBJC_EXPORT
 - (void)joinWithToken:(NSString*)token
             onSuccess:(nullable void (^)(OWTConferenceInfo*))onSuccess
             onFailure:(nullable void (^)(NSError*))onFailure;
+
+- (void)requestConferenceInfo:(nullable void (^)(OWTConferenceInfo*))onSuccess
+                    onFailure:(nullable void (^)(NSError*))onFailure;
+
+- (OWTConferenceInfo *)getConferenceInfo;
 /**
   @brief Publish the stream to the current room.
   @param stream The stream to be published.

@@ -126,16 +126,15 @@ void ConferencePeerConnectionChannel::IceRestart() {
   // }
 }
 void ConferencePeerConnectionChannel::IceRestartEx() {
+  RTC_LOG(LS_INFO) << "ConferencePeerConnectionChannel::IceRestartEx::SignalingState = "<<SignalingState();
   if (SignalingState() == PeerConnectionInterface::SignalingState::kStable) {
-    RTC_LOG(LS_INFO) << "ConferencePeerConnectionChannel::IceRestartEx----success";
     //清除旧的ice
     std::lock_guard<std::mutex> lock(candidates_mutex_);
     ice_candidates_.clear();
 
-    //重新ice 协商
     this->CreateOffer();
   } else {
-    RTC_LOG(LS_INFO) << "ConferencePeerConnectionChannel::IceRestartEx = "<<SignalingState();
+    this->CreateOffer();
   }
 }
 void ConferencePeerConnectionChannel::DoIceRestart() {

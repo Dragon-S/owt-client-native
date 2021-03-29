@@ -16,6 +16,7 @@ PeerConnectionChannel::PeerConnectionChannel(
       factory_(nullptr) {}
 
 PeerConnectionChannel::~PeerConnectionChannel() {
+  RTC_LOG(LS_INFO) << "sll----------------PeerConnectionChannel::析构";
   if (peer_connection_ != nullptr) {
     peer_connection_->Close();
     peer_connection_ = nullptr;

@@ -79,6 +79,7 @@ ConferencePeerConnectionChannel::ConferencePeerConnectionChannel(
   media_constraints_ = std::unique_ptr<webrtc::MediaConstraints>(mediaConstraints);
 }
 ConferencePeerConnectionChannel::~ConferencePeerConnectionChannel() {
+  RTC_LOG(LS_INFO) << "sll----------------ConferencePeerConnectionChannel::析构";
   RTC_LOG(LS_INFO) << "Deconstruct conference peer connection channel";
   if (published_stream_)
     Unpublish(GetSessionId(), nullptr, nullptr);
@@ -687,12 +688,20 @@ void ConferencePeerConnectionChannel::Subscribe(
     transceiver_init.direction = webrtc::RtpTransceiverDirection::kRecvOnly;
     AddTransceiver(cricket::MediaType::MEDIA_TYPE_VIDEO, transceiver_init);
   }
+
+  std::weak_ptr<ConferencePeerConnectionChannel> weak_this =
+    shared_from_this();
   signaling_channel_->SendInitializationMessage(
       sio_options, "", stream->Id(),
-      [this](std::string session_id) {
+      [weak_this](std::string session_id) {
+        auto that = weak_this.lock();
+        if (!that) {
+          RTC_LOG(LS_ERROR) << "sll----------------ConferencePeerConnectionChannel对象已释放";
+          return;
+        }
         // Pre-set the session's ID.
-        SetSessionId(session_id);
-        CreateOffer();
+        that->SetSessionId(session_id);
+        that->CreateOffer();
       },
       on_failure);  // TODO: on_failure
 }
@@ -888,6 +897,10 @@ void ConferencePeerConnectionChannel::OnSignalingMessage(
           if (stream_added) {
             event_queue_->PostTask([weak_this] {
               auto that = weak_this.lock();
+              if (!that) {
+                RTC_LOG(LS_WARNING) << "ConferencePeerConnectionChannel 已经被释放";
+                return;
+              }
               std::lock_guard<std::mutex> lock(that->callback_mutex_);
               if (!that || !that->subscribe_success_callback_)
                 return;
@@ -969,25 +982,33 @@ void ConferencePeerConnectionChannel::SendPublishMessage(
     sio::message::ptr options,
     std::shared_ptr<LocalStream> stream,
     std::function<void(std::unique_ptr<Exception>)> on_failure) {
+
+  std::weak_ptr<ConferencePeerConnectionChannel> weak_this = shared_from_this();
   signaling_channel_->SendInitializationMessage(
       options, stream->MediaStream()->id(), "",
-      [stream, this](std::string session_id) {
-        SetSessionId(session_id);
+      [stream, weak_this](std::string session_id) {
+        auto that = weak_this.lock();
+        if (!that) {
+          RTC_LOG(LS_ERROR) << "sll----------------ConferencePeerConnectionChannel对象已释放";
+          return;
+        }
+
+        that->SetSessionId(session_id);
         for (const auto& track : stream->MediaStream()->GetAudioTracks()) {
           webrtc::RtpTransceiverInit transceiver_init;
           transceiver_init.stream_ids.push_back(stream->MediaStream()->id());
           transceiver_init.direction = webrtc::RtpTransceiverDirection::kSendOnly;
-          AddTransceiver(track, transceiver_init);
+          that->AddTransceiver(track, transceiver_init);
         }
         for (const auto& track : stream->MediaStream()->GetVideoTracks()) {
           webrtc::RtpTransceiverInit transceiver_init;
           transceiver_init.stream_ids.push_back(stream->MediaStream()->id());
           transceiver_init.direction =
               webrtc::RtpTransceiverDirection::kSendOnly;
-          if (configuration_.video.size() > 0 &&
-              configuration_.video[0].rtp_encoding_parameters.size() != 0) {
+          if (that->configuration_.video.size() > 0 &&
+              that->configuration_.video[0].rtp_encoding_parameters.size() != 0) {
             for (auto encoding :
-                 configuration_.video[0].rtp_encoding_parameters) {
+                 that->configuration_.video[0].rtp_encoding_parameters) {
               webrtc::RtpEncodingParameters param;
               if (encoding.rid != "")
                 param.rid = encoding.rid;
@@ -1006,9 +1027,9 @@ void ConferencePeerConnectionChannel::SendPublishMessage(
               transceiver_init.send_encodings.push_back(param);
             }
           }
-          AddTransceiver(track, transceiver_init);
+          that->AddTransceiver(track, transceiver_init);
         }
-        CreateOffer();
+        that->CreateOffer();
       },
       on_failure);
 }

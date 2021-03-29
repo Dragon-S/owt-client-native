@@ -190,6 +190,7 @@ ConferenceClient::ConferenceClient(
 }
 
 ConferenceClient::~ConferenceClient() {
+  RTC_LOG(LS_INFO) << "sll----------------ConferenceClient::析构";
   signaling_channel_->RemoveObserver(*this);
 }
 
@@ -1797,7 +1798,7 @@ void ConferenceClient::TriggerOnStreamUpdated(sio::message::ptr stream_info) {
   auto stream_type = added_stream_type_.find(id);
   if (stream_it == added_streams_.end() ||
       stream_type == added_stream_type_.end()) {
-    RTC_DCHECK(false);
+//    RTC_DCHECK(false);
     RTC_LOG(LS_WARNING) << "Invalid stream or type.";
     return;
   }

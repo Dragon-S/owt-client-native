@@ -333,6 +333,7 @@ PlayPauseFailureCallback(FailureBlock on_failure,
                     });
     _nativeConferenceClient->AddObserver(*_observer.get());
   } else {
+    NSLog(@"sll--------移除ConferenceClientObserverObjcImpl");
     _observer.reset();
   }
   _delegate = delegate;

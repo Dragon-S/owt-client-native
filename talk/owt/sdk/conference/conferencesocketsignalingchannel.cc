@@ -75,7 +75,17 @@ ConferenceSocketSignalingChannel::ConferenceSocketSignalingChannel()
       is_reconnection_(false),
       outgoing_message_id_(1) {}
 ConferenceSocketSignalingChannel::~ConferenceSocketSignalingChannel() {
-  delete socket_client_;
+  RTC_LOG(LS_INFO) << "sll----------------ConferenceSocketSignalingChannel::析构";
+  // delete socket_client_;//TODO: 此处有泄漏，主要是为了暂时解决socket线程阻塞主线程问题
+  socket_client_->set_reconnect_attempts(0);
+  socket_client_->set_reconnect_delay(0);
+  socket_client_->set_reconnect_delay_max(0);
+
+  socket_client_->clear_con_listeners();
+
+  socket_client_->clear_socket_listeners();
+
+  TriggerOnServerDisconnected();
 }
 void ConferenceSocketSignalingChannel::AddObserver(
     ConferenceSocketSignalingChannelObserver& observer) {
@@ -281,9 +291,12 @@ void ConferenceSocketSignalingChannel::Connect(
             if (message->get_flag() == sio::message::flag_string) {
               OnReconnectionTicket(message->get_string());
             }
-            RTC_LOG(LS_VERBOSE) << "Reconnection success";
+            RTC_LOG(LS_INFO) << "Reconnection success";
+            //FIXME: 断网重连后可能造成，缓存断网前的offer信息，重连成功后，会发送缓存的offer，造成服务端出错。暂时不发送重连后暂时不发送缓存信息。并清空消息队列，
+            //此处可能有未知的错误(需要考虑是否要丢弃重连前的所有信息)!!!
+            // DrainQueuedMessages();
+            DropQueuedMessages();
             TriggerOnServerReconnectionSuccess();
-            DrainQueuedMessages();
           });
     }
   });

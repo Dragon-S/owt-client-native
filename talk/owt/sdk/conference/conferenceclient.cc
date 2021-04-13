@@ -996,11 +996,18 @@ void ConferenceClient::OnSignalingMessage(sio::message::ptr message) {
 
     //专门处理服务端peer异常
     //通知 Publication or Subscription服务端ice Failed或者Access node
-    std::string peer_id = stream_id;
+    int error_code = message->get_map()["code"]->get_int();
+    std::string error_message = message->get_map()["data"]->get_string();
+    RTC_LOG(LS_ERROR)
+      << "ServerError:: ErrorCode = " << error_code
+      << "::ErrorMessage = " << error_message;
+
+    std::string session_id = message->get_map()["id"]->get_string();
     const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
     for (auto its = stream_update_observers_.begin();
-         its != stream_update_observers_.end(); ++its) {
-      (*its).get().OnServerFailed(peer_id, "Server ice failed or Access node");
+        its != stream_update_observers_.end(); ++its) {
+      (*its).get().OnServerFailed(session_id,
+        "ErrorCode = " + std::to_string(error_code) + "ErrorMessage = " + error_message);
     }
     return;
   }
@@ -1132,6 +1139,12 @@ void ConferenceClient::OnSipAndPstnJoin(std::shared_ptr<sio::message> info) {
   for (auto its = observers_.begin(); its != observers_.end(); ++its) {
     (*its).get().OnSipAndPstnJoin(info->get_string());
   }
+}
+void ConferenceClient::OnStreamError(
+    std::shared_ptr<Stream> stream,
+    const std::string& pcc_id,
+    std::shared_ptr<const Exception> exception) {
+  TriggerOnStreamError(stream, pcc_id, exception);
 }
 void ConferenceClient::OnStreamError(
     std::shared_ptr<Stream> stream,
@@ -1758,6 +1771,16 @@ void ConferenceClient::TriggerOnStreamRemoved(sio::message::ptr stream_info) {
   for (auto its = stream_update_observers_.begin();
        its != stream_update_observers_.end(); ++its) {
     (*its).get().OnStreamRemoved(id);
+  }
+}
+void ConferenceClient::TriggerOnStreamError(
+    std::shared_ptr<Stream> stream,
+    const std::string& pcc_id,
+    std::shared_ptr<const Exception> exception) {
+  const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
+  for (auto its = stream_update_observers_.begin();
+       its != stream_update_observers_.end(); ++its) {
+    (*its).get().OnStreamError(pcc_id, exception->Message());
   }
 }
 void ConferenceClient::TriggerOnStreamError(

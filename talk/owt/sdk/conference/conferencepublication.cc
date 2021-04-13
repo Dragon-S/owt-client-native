@@ -165,6 +165,17 @@ void ConferencePublication::OnStreamError(const std::string& error_msg) {
   }
 }
 
+void ConferencePublication::OnStreamError(const std::string& peer_id, const std::string& error_msg) {
+  if (ended_ || peer_id != id_)
+    return;
+
+  for (auto its = observers_.begin(); its != observers_.end(); ++its) {
+    std::unique_ptr<Exception> e(new Exception(
+        ExceptionType::kConferenceUnknown, error_msg));
+    (*its).get().OnError(std::move(e));
+  }
+}
+
 void ConferencePublication::OnIceStateChange(const int state) {
   for (auto its = observers_.begin(); its != observers_.end(); ++its) {
     (*its).get().OnIceStateChange(state);

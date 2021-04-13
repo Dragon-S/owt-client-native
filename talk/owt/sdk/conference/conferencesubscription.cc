@@ -222,6 +222,17 @@ void ConferenceSubscription::OnStreamError(const std::string& error_msg) {
   }
 }
 
+void ConferenceSubscription::OnStreamError(const std::string& peer_id, const std::string& error_msg) {
+  if (ended_ || peer_id != id_)
+    return;
+
+  for (auto its = observers_.begin(); its != observers_.end(); ++its) {
+    std::unique_ptr<Exception> e(
+        new Exception(ExceptionType::kConferenceUnknown, error_msg));
+    (*its).get().OnError(std::move(e));
+  }
+}
+
 void ConferenceSubscription::AddObserver(SubscriptionObserver& observer) {
   const std::lock_guard<std::mutex> lock(observer_mutex_);
   std::vector<std::reference_wrapper<SubscriptionObserver>>::iterator it =

@@ -69,6 +69,7 @@ class ConferenceSubscription : public ConferenceStreamUpdateObserver,
     //专门处理服务端peer异常
     void OnServerFailed(const std::string& peer_id, const std::string& error_msg);
     void OnStreamError(const std::string& error_msg);
+    void OnStreamError(const std::string& peer_id, const std::string& error_msg);
     std::string id_;
     std::string stream_id_;
     bool ended_;

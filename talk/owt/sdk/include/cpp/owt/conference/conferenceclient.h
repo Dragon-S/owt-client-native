@@ -182,6 +182,10 @@ class ConferencePeerConnectionChannelObserver {
   virtual void OnStreamError(
       std::shared_ptr<Stream> stream,
       std::shared_ptr<const Exception> exception) = 0;
+  virtual void OnStreamError(
+      std::shared_ptr<Stream> stream,
+      const std::string& pcc_id,
+      std::shared_ptr<const Exception> exception) = 0;
   virtual void OnIceStateChange(std::shared_ptr<Stream> stream, const int state) = 0;
 };
 /** @endcond */
@@ -386,6 +390,10 @@ class ConferenceClient final
   virtual void OnStreamError(
       std::shared_ptr<Stream> stream,
       std::shared_ptr<const Exception> exception) override;
+  virtual void OnStreamError(
+      std::shared_ptr<Stream> stream,
+      const std::string& pcc_id,
+      std::shared_ptr<const Exception> exception) override;
   virtual void OnIceStateChange(
       std::shared_ptr<Stream> stream, const int state) override;
   // Provide access for Publication and Subscription instances.
@@ -472,6 +480,9 @@ class ConferenceClient final
   void TriggerOnStreamRemoved(std::shared_ptr<sio::message> stream_info);
   void TriggerOnStreamUpdated(std::shared_ptr<sio::message> stream_info);
   void TriggerOnStreamError(std::shared_ptr<Stream> stream,
+                            std::shared_ptr<const Exception> exception);
+  void TriggerOnStreamError(std::shared_ptr<Stream> stream,
+                            const std::string& pcc_id,
                             std::shared_ptr<const Exception> exception);
   void TriggerOnIceStateChange(const int state);
   // Return true if |user_info| is correct, and |*participant| points to the participant

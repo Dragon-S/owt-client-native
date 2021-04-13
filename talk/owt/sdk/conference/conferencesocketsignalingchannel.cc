@@ -1083,9 +1083,9 @@ void ConferenceSocketSignalingChannel::Emit(
 //重连成功后丢弃消息队列
 void ConferenceSocketSignalingChannel::DropQueuedMessagesNoCallback() {
   std::lock_guard<std::mutex> lock(outgoing_message_mutex_);
-  while (!outgoing_messages_.empty()) {
-    outgoing_messages_.pop();
-  }
+  //高效清除queue
+  std::queue<SioMessage> empty;
+  std::swap(empty, outgoing_messages_);
 }
 void ConferenceSocketSignalingChannel::DropQueuedMessages() {
   // TODO(jianjunz): Trigger on_failure in another thread. In current

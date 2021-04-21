@@ -10,6 +10,7 @@
 @dynamic nativeAudioCodecParameters;
 static std::unordered_map<OWTAudioCodec, const owt::base::AudioCodec>
     audioCodecMap = {{OWTAudioCodecOpus, owt::base::AudioCodec::kOpus},
+                     {OWTAudioCodecRsfecopus, owt::base::AudioCodec::KRsfecopus},
                      {OWTAudioCodecIsac, owt::base::AudioCodec::kIsac},
                      {OWTAudioCodecG722, owt::base::AudioCodec::kG722},
                      {OWTAudioCodecPcmu, owt::base::AudioCodec::kPcmu},

@@ -49,7 +49,44 @@ bool PeerConnectionChannel::InitializePeerConnection() {
     network_monitor->SignalNetworksChanged.connect(
         this, &PeerConnectionChannel::OnNetworksChanged);
   }
+
+  webrtc::MediaConstraints::Constraints mandatory;
+  webrtc::MediaConstraints::Constraints optional;
+  mandatory.push_back(webrtc::MediaConstraints::Constraint(webrtc::MediaConstraints::kIceRestart, webrtc::MediaConstraints::kValueFalse));
+
+  webrtc::MediaConstraints *mediaConstraints = new webrtc::MediaConstraints(mandatory, optional);
+  media_constraints_ = std::unique_ptr<webrtc::MediaConstraints>(mediaConstraints);
+
   return true;
+}
+void PeerConnectionChannel::SetIceRestartConstraint(bool iceRestart) {
+  std::string strBool = iceRestart ? webrtc::MediaConstraints::kValueTrue : webrtc::MediaConstraints::kValueFalse;
+  bool existed = false;
+  webrtc::MediaConstraints::Constraints oldMandatory = media_constraints_->GetMandatory();
+  for (webrtc::MediaConstraints::Constraints::const_iterator iter = oldMandatory.begin();
+    iter != oldMandatory.end(); iter++) {
+    if (iter->key == webrtc::MediaConstraints::kIceRestart && iter->value == strBool) {
+      existed = true;
+      break;
+    }
+  }
+
+  if (!existed) {
+    return;
+  }
+
+  webrtc::MediaConstraints::Constraints newMandatory;
+  for (webrtc::MediaConstraints::Constraints::const_iterator iter = oldMandatory.begin();
+    iter != oldMandatory.end(); iter++) {
+    if (iter->key == webrtc::MediaConstraints::kIceRestart) {
+      newMandatory.push_back(webrtc::MediaConstraints::Constraint(webrtc::MediaConstraints::kIceRestart, strBool));
+    } else {
+      newMandatory.push_back(webrtc::MediaConstraints::Constraint(iter->key, iter->value));
+    }
+  }
+
+  std::unique_ptr<webrtc::MediaConstraints> newMediaConstraints(new webrtc::MediaConstraints(newMandatory, media_constraints_->GetOptional()));
+  media_constraints_ = std::move(newMediaConstraints);
 }
 void PeerConnectionChannel::ApplyBitrateSettings() {
   RTC_CHECK(peer_connection_);
@@ -137,9 +174,11 @@ void PeerConnectionChannel::OnMessage(rtc::Message* msg) {
           static_cast<rtc::TypedMessageData<
               scoped_refptr<FunctionalCreateSessionDescriptionObserver>>*>(
               msg->pdata);
-      peer_connection_->CreateOffer(
-          param->data(),
-          webrtc::PeerConnectionInterface::RTCOfferAnswerOptions());
+
+      webrtc::PeerConnectionInterface::RTCOfferAnswerOptions offerAnswerOptions;
+      webrtc::CopyConstraintsIntoOfferAnswerOptions(media_constraints_.get(), &offerAnswerOptions);
+      peer_connection_->CreateOffer(param->data(), offerAnswerOptions);
+
       delete param;
       break;
     }
@@ -149,9 +188,11 @@ void PeerConnectionChannel::OnMessage(rtc::Message* msg) {
           static_cast<rtc::TypedMessageData<
               scoped_refptr<FunctionalCreateSessionDescriptionObserver>>*>(
               msg->pdata);
-      peer_connection_->CreateAnswer(
-          param->data(),
-          webrtc::PeerConnectionInterface::RTCOfferAnswerOptions());
+
+      webrtc::PeerConnectionInterface::RTCOfferAnswerOptions offerAnswerOptions;
+      webrtc::CopyConstraintsIntoOfferAnswerOptions(media_constraints_.get(), &offerAnswerOptions);
+      peer_connection_->CreateAnswer(param->data(), offerAnswerOptions);
+
       delete param;
       break;
     }

@@ -65,6 +65,7 @@ class PeerConnectionChannel : public rtc::MessageHandler,
  protected:
   virtual ~PeerConnectionChannel();
   bool InitializePeerConnection();
+  void SetIceRestartConstraint(bool iceRestart = false);
   const webrtc::SessionDescriptionInterface* LocalDescription();
   PeerConnectionInterface::SignalingState SignalingState() const;
   // Apply the bitrate settings on all tracks available. Failing to set any of them
@@ -136,7 +137,7 @@ class PeerConnectionChannel : public rtc::MessageHandler,
   // Use a map if we need more than one data channels for a PeerConnection in
   // the future.
   rtc::scoped_refptr<webrtc::DataChannelInterface> data_channel_;
-  webrtc::MediaConstraints media_constraints_;
+  std::unique_ptr<webrtc::MediaConstraints> media_constraints_;
   // Direction of audio and video transceivers. In conference mode, there are at
   // most 1 audio transceiver and 1 video transceiver.
   webrtc::RtpTransceiverDirection audio_transceiver_direction_;

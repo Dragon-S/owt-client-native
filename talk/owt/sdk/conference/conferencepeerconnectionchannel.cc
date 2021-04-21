@@ -128,6 +128,9 @@ void ConferencePeerConnectionChannel::IceRestart() {
 void ConferencePeerConnectionChannel::IceRestartEx() {
   RTC_LOG(LS_INFO) << "ConferencePeerConnectionChannel::IceRestartEx::SignalingState = "<<SignalingState();
   if (SignalingState() == PeerConnectionInterface::SignalingState::kStable) {
+
+    SetIceRestartConstraint(true);
+
     //清除旧的ice
     std::lock_guard<std::mutex> lock(candidates_mutex_);
     ice_candidates_.clear();

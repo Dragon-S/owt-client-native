@@ -12,7 +12,6 @@ namespace owt {
 namespace base {
 static const std::unordered_map<AudioCodec, const std::string, EnumClassHash>
     audio_codec_names = {{AudioCodec::kOpus, "OPUS"},
-                         {AudioCodec::KRsfecopus, "RSFECOPUS"},
                          {AudioCodec::kIsac, "ISAC"},
                          {AudioCodec::kG722, "G722"},
                          {AudioCodec::kPcmu, "PCMU"},

@@ -13,7 +13,6 @@ enum class AudioCodec : int {
   kPcmu = 1,   ///< g711 u-law
   kPcma,   ///< g711 a-law
   kOpus,   ///< opus
-  KRsfecopus,///<Rsfecopus
   kG722,   ///< g722
   kIsac,   ///< iSAC
   kIlbc,   ///< iLBC

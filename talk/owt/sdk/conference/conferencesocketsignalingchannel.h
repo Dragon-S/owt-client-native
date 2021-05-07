@@ -8,8 +8,7 @@
 #include <queue>
 #include <random>
 #include <unordered_map>
-#include "talk/owt/include/sio_client.h"
-#include "talk/owt/include/sio_message.h"
+#include "talk/owt/sdk/include/cpp/owt/conference/SocketIoClientInterface.h"
 #include "talk/owt/sdk/include/cpp/owt/conference/conferenceclient.h"
 #include "talk/owt/sdk/include/cpp/owt/conference/user.h"
 namespace owt {
@@ -25,6 +24,7 @@ class ConferenceSocketSignalingChannel
     : public std::enable_shared_from_this<ConferenceSocketSignalingChannel> {
  public:
   explicit ConferenceSocketSignalingChannel();
+  explicit ConferenceSocketSignalingChannel(sio::SocketIoClientInterface* socket_io_client);
   virtual ~ConferenceSocketSignalingChannel();
   virtual void AddObserver(ConferenceSocketSignalingChannelObserver& observer);
   virtual void RemoveObserver(
@@ -142,7 +142,7 @@ class ConferenceSocketSignalingChannel
   // Convert an resolution object to a sio message.
   sio::message::ptr ResolutionMessage(
       const owt::base::Resolution& resolution);
-  sio::client* socket_client_;
+  sio::SocketIoClientInterface* socket_io_client_;
   std::vector<ConferenceSocketSignalingChannelObserver*> observers_;
   std::mutex observer_mutex_;
   std::function<void(std::unique_ptr<Exception>)>

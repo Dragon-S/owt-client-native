@@ -13,6 +13,7 @@
 #import "OWT/OWTRemoteMixedStream.h"
 #import "OWT/OWTRemoteStream.h"
 #import "OWT/OWTPublishOptions.h"
+#import "OWT/SocketIoObjcProtocol.h"
 NS_ASSUME_NONNULL_BEGIN
 @protocol OWTConferenceClientDelegate;
 /// An asynchronous class for app to communicate with a conference in MCU
@@ -23,6 +24,7 @@ RTC_OBJC_EXPORT
   @param config Configuration for creating the OWTConferenceClient.
 */
 - (instancetype)initWithConfiguration:(OWTConferenceClientConfiguration*)config;
+- (instancetype)initWithConfiguration:(OWTConferenceClientConfiguration*)config socketIo:(id<SocketIoObjcProtocol>)socketIo;
 /**
   @brief Connect to the specified room to join a conference.
   @param token Includes the room info which is encrypted.

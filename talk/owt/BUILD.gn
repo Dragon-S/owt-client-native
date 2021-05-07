@@ -275,6 +275,7 @@ static_library("owt_sdk_conf") {
     "sdk/include/cpp/owt/conference/externaloutput.h",
     "sdk/include/cpp/owt/conference/remotemixedstream.h",
     "sdk/include/cpp/owt/conference/user.h",
+    "sdk/include/cpp/owt/conference/SocketIoClientInterface.h",
   ]
   if (is_clang) {
     configs -= [ "//build/config/clang:find_bad_constructs" ]
@@ -343,6 +344,8 @@ if (is_ios) {
       "sdk/base/objc/public/OWTRemoteStream.h",
       "sdk/base/objc/public/OWTStream.h",
       "sdk/base/sysinfoios.mm",
+      "sdk/conference/objc/SocketIoClientObjcImpl.h.",
+      "sdk/conference/objc/SocketIoClientObjcImpl.mm",
       "sdk/conference/objc/ConferenceClientObserverObjcImpl.h",
       "sdk/conference/objc/ConferenceClientObserverObjcImpl.mm",
       "sdk/conference/objc/ConferencePublicationObserverObjcImpl.mm",
@@ -368,6 +371,7 @@ if (is_ios) {
       "sdk/conference/objc/public/OWTConferenceSubscription.h",
       "sdk/conference/objc/public/OWTRemoteMixedStream.h",
       "sdk/conference/objc/public/OWTRemoteMixedStreamObserver.h",
+      "sdk/conference/objc/public/SocketIoObjcProtocol.h",
       "sdk/p2p/objc/OWTP2PClient.m",
       "sdk/p2p/objc/OWTP2PClientConfiguration.m",
       "sdk/p2p/objc/OWTP2PPeerConnectionChannel.h",

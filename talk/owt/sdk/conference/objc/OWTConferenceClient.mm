@@ -24,6 +24,7 @@
 #import "talk/owt/sdk/include/cpp/owt/conference/remotemixedstream.h"
 #import "webrtc/sdk/objc/Framework/Classes/Common/NSString+StdString.h"
 #import "webrtc/sdk/objc/api/peerconnection/RTCIceServer+Private.h"
+#import "talk/owt/sdk/conference/objc/SocketIoClientObjcImpl.h"
 @implementation OWTConferenceClient {
   std::shared_ptr<owt::conference::ConferenceClient> _nativeConferenceClient;
   std::unique_ptr<
@@ -53,6 +54,31 @@
           : owt::base::ClientConfiguration::CandidateNetworkPolicy::kAll;
   _nativeConferenceClient =
       owt::conference::ConferenceClient::Create(*nativeConfig);
+  _publishedStreams = [[NSMutableDictionary alloc] init];
+  return self;
+}
+- (instancetype)initWithConfiguration:
+    (OWTConferenceClientConfiguration*)config socketIo:(id<SocketIoObjcProtocol>)socketIo {
+  self = [super init];
+  owt::conference::ConferenceClientConfiguration* nativeConfig =
+      new owt::conference::ConferenceClientConfiguration();
+  std::vector<owt::base::IceServer> iceServers;
+  for (RTCIceServer* server in config.rtcConfiguration.iceServers) {
+    owt::base::IceServer iceServer;
+    iceServer.urls = server.nativeServer.urls;
+    iceServer.username = server.nativeServer.username;
+    iceServer.password = server.nativeServer.password;
+    iceServers.push_back(iceServer);
+  }
+  nativeConfig->ice_servers = iceServers;
+  nativeConfig->candidate_network_policy =
+      config.rtcConfiguration.candidateNetworkPolicy ==
+              RTCCandidateNetworkPolicyLowCost
+          ? owt::base::ClientConfiguration::CandidateNetworkPolicy::kLowCost
+          : owt::base::ClientConfiguration::CandidateNetworkPolicy::kAll;
+  sio::SocketIoClientInterface* socket_io_client = new sio::SocketIoClientObjcImpl(socketIo);
+  _nativeConferenceClient =
+      owt::conference::ConferenceClient::Create(*nativeConfig, socket_io_client);
   _publishedStreams = [[NSMutableDictionary alloc] init];
   return self;
 }

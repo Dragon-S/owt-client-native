@@ -19,6 +19,7 @@
 #include "owt/conference/conferencesubscription.h"
 #include "owt/conference/streamupdateobserver.h"
 #include "owt/conference/subscribeoptions.h"
+#include "talk/owt/sdk/include/cpp/owt/conference/SocketIoClientInterface.h"
 namespace sio{
   class message;
 }
@@ -249,6 +250,10 @@ class ConferenceClient final
   */
   static std::shared_ptr<ConferenceClient> Create(
       const ConferenceClientConfiguration& configuration);
+  static std::shared_ptr<ConferenceClient> Create(
+    const ConferenceClientConfiguration& configuration, sio::SocketIoClientInterface* socket_io_client);
+  ConferenceClient();
+  ConferenceClient(const ConferenceClientConfiguration& configuration, sio::SocketIoClientInterface* socket_io_client);
   ~ConferenceClient();
   /// Add an observer for conferenc client.
   void AddObserver(ConferenceClientObserver& observer);

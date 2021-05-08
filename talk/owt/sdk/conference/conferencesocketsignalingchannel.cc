@@ -73,7 +73,7 @@ ConferenceSocketSignalingChannel::ConferenceSocketSignalingChannel()
       reconnection_attempted_(0),
       is_reconnection_(false),
       outgoing_message_id_(1) {}
-ConferenceSocketSignalingChannel::ConferenceSocketSignalingChannel(sio::SocketIoClientInterface* socket_io_client)
+ConferenceSocketSignalingChannel::ConferenceSocketSignalingChannel(std::shared_ptr<sio::SocketIoClientInterface> socket_io_client)
     : socket_io_client_(socket_io_client),
       reconnection_ticket_(""),
       participant_id_(""),
@@ -81,16 +81,6 @@ ConferenceSocketSignalingChannel::ConferenceSocketSignalingChannel(sio::SocketIo
       is_reconnection_(false),
       outgoing_message_id_(1) {}
 ConferenceSocketSignalingChannel::~ConferenceSocketSignalingChannel() {
-  // delete socket_client_;//TODO: 此处有泄漏，主要是为了暂时解决socket线程阻塞主线程问题
-  socket_io_client_->set_reconnect_attempts(0);
-  socket_io_client_->set_reconnect_delay(0);
-  socket_io_client_->set_reconnect_delay_max(0);
-
-  socket_io_client_->clear_con_listeners();
-
-  socket_io_client_->clear_socket_listeners();
-
-  TriggerOnServerDisconnected();
 }
 void ConferenceSocketSignalingChannel::AddObserver(
     ConferenceSocketSignalingChannelObserver& observer) {

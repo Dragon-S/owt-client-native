@@ -76,7 +76,7 @@
               RTCCandidateNetworkPolicyLowCost
           ? owt::base::ClientConfiguration::CandidateNetworkPolicy::kLowCost
           : owt::base::ClientConfiguration::CandidateNetworkPolicy::kAll;
-  sio::SocketIoClientInterface* socket_io_client = new sio::SocketIoClientObjcImpl(socketIo);
+  std::shared_ptr<sio::SocketIoClientInterface> socket_io_client = std::make_shared<sio::SocketIoClientObjcImpl>(socketIo);
   _nativeConferenceClient =
       owt::conference::ConferenceClient::Create(*nativeConfig, socket_io_client);
   _publishedStreams = [[NSMutableDictionary alloc] init];

@@ -251,9 +251,9 @@ class ConferenceClient final
   static std::shared_ptr<ConferenceClient> Create(
       const ConferenceClientConfiguration& configuration);
   static std::shared_ptr<ConferenceClient> Create(
-    const ConferenceClientConfiguration& configuration, sio::SocketIoClientInterface* socket_io_client);
+    const ConferenceClientConfiguration& configuration, std::shared_ptr<sio::SocketIoClientInterface> socket_io_client);
   ConferenceClient();
-  ConferenceClient(const ConferenceClientConfiguration& configuration, sio::SocketIoClientInterface* socket_io_client);
+  ConferenceClient(const ConferenceClientConfiguration& configuration, std::shared_ptr<sio::SocketIoClientInterface> socket_io_client);
   ~ConferenceClient();
   /// Add an observer for conferenc client.
   void AddObserver(ConferenceClientObserver& observer);

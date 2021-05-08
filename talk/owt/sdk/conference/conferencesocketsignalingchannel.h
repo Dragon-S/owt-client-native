@@ -24,7 +24,7 @@ class ConferenceSocketSignalingChannel
     : public std::enable_shared_from_this<ConferenceSocketSignalingChannel> {
  public:
   explicit ConferenceSocketSignalingChannel();
-  explicit ConferenceSocketSignalingChannel(sio::SocketIoClientInterface* socket_io_client);
+  explicit ConferenceSocketSignalingChannel(std::shared_ptr<sio::SocketIoClientInterface> socket_io_client);
   virtual ~ConferenceSocketSignalingChannel();
   virtual void AddObserver(ConferenceSocketSignalingChannelObserver& observer);
   virtual void RemoveObserver(
@@ -142,7 +142,7 @@ class ConferenceSocketSignalingChannel
   // Convert an resolution object to a sio message.
   sio::message::ptr ResolutionMessage(
       const owt::base::Resolution& resolution);
-  sio::SocketIoClientInterface* socket_io_client_;
+  std::shared_ptr<sio::SocketIoClientInterface> socket_io_client_;
   std::vector<ConferenceSocketSignalingChannelObserver*> observers_;
   std::mutex observer_mutex_;
   std::function<void(std::unique_ptr<Exception>)>

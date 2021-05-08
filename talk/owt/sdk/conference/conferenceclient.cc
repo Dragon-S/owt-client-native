@@ -176,7 +176,7 @@ std::shared_ptr<ConferenceClient> ConferenceClient::Create(
   return std::shared_ptr<ConferenceClient>(new ConferenceClient(configuration));
 }
 std::shared_ptr<ConferenceClient> ConferenceClient::Create(
-    const ConferenceClientConfiguration& configuration, sio::SocketIoClientInterface* socket_io_client) {
+    const ConferenceClientConfiguration& configuration, std::shared_ptr<sio::SocketIoClientInterface> socket_io_client) {
   return std::shared_ptr<ConferenceClient>(new ConferenceClient(configuration, socket_io_client));
 }
 ConferenceClient::ConferenceClient(
@@ -192,7 +192,7 @@ ConferenceClient::ConferenceClient(
   signaling_channel_->AddObserver(*this);
 }
 ConferenceClient::ConferenceClient(
-    const ConferenceClientConfiguration& configuration, sio::SocketIoClientInterface* socket_io_client)
+    const ConferenceClientConfiguration& configuration, std::shared_ptr<sio::SocketIoClientInterface> socket_io_client)
     : configuration_(configuration),
       signaling_channel_(new ConferenceSocketSignalingChannel(socket_io_client)),
       signaling_channel_connected_(false) {

@@ -31,7 +31,7 @@ public:
     virtual void clear_con_listeners() override;
     virtual void clear_socket_listeners() override;
     
-    virtual void setupSocket(const std::string& uri) override;
+    virtual void setup(const std::string& uri) override;
     virtual void connect() override;
     
     virtual void emit(std::string const& name,

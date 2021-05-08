@@ -149,12 +149,12 @@ void ConferenceSocketSignalingChannel::Connect(
   rtc::GetStringFromJsonObject(json_token, "host", &host);
   std::weak_ptr<ConferenceSocketSignalingChannel> weak_this =
       shared_from_this();
-  socket_io_client_->setupSocket(scheme.append(host));
   socket_io_client_->set_reconnect_attempts(kReconnectionAttempts);
   socket_io_client_->set_reconnect_delay(kReconnectionDelay);
   socket_io_client_->set_reconnect_delay_max(kReconnectionDelayMax);
-  socket_io_client_->set_socket_close_listener(
-      [weak_this](std::string const& nsp) {
+  socket_io_client_->setup(scheme.append(host));
+  socket_io_client_->set_close_listener(
+      [weak_this](sio::SocketIoClientInterface::close_reason const& reason) {
         RTC_LOG(LS_INFO) << "Socket.IO disconnected.";
         auto that = weak_this.lock();
         if (that && (that->reconnection_attempted_ >= kReconnectionAttempts ||

@@ -23,12 +23,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setConnectClosedCallback:(ConnectClosedCallback)closeCallback;
 - (void)setReconnectCallback:(ReconnectCallback)reconnectCallback;
 - (void)setReconnectingCallback:(ReconnectingCallback)reconnectingCallback;
-- (void)setDisconnectCallback:(DisconnectCallback)disconnectCallback;
 
 - (void)clearConnectListeners;
 - (void)clearSocketListeners;
 
-- (void)setupSocket:(NSString *)uri;
+- (void)setup:(NSString *)uri;
 
 - (void)connect;
 

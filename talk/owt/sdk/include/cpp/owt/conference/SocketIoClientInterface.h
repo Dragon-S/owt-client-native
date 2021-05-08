@@ -39,7 +39,7 @@ public:
     virtual void clear_con_listeners() = 0;
     virtual void clear_socket_listeners() = 0;
     
-    virtual void setupSocket(const std::string& uri) = 0;
+    virtual void setup(const std::string& uri) = 0;
     virtual void connect() = 0;
     
     virtual void emit(std::string const& name,

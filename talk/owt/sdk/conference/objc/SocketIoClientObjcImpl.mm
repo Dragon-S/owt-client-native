@@ -262,10 +262,10 @@ void SocketIoClientObjcImpl::clear_socket_listeners() {
     m_socket_close_listener = nullptr;
 }
 
-void SocketIoClientObjcImpl::setupSocket(const std::string& uri) {
+void SocketIoClientObjcImpl::setup(const std::string& uri) {
     NSString *ns_str = [NSString stringWithCString:uri.c_str()
                                           encoding:[NSString defaultCStringEncoding]];
-    [m_socketio_objc setupSocket:ns_str];
+    [m_socketio_objc setup:ns_str];
 }
 
 void SocketIoClientObjcImpl::connect() {

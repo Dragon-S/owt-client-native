@@ -39,7 +39,7 @@ AudioCodec MediaUtils::GetAudioCodecFromString(const std::string& codec_name) {
   if (it != audio_codec_names.end()) {
     return it->second;
   }
-  RTC_NOTREACHED();
+  // RTC_NOTREACHED();//TODO:兼容rsfecopus编码，只做测试，后期合并代码时需要取消屏蔽
   return AudioCodec::kUnknown;
 }
 VideoCodec MediaUtils::GetVideoCodecFromString(const std::string& codec_name) {

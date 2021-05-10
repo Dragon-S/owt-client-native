@@ -35,7 +35,7 @@ static NSString* sio_string_message_2_ns_string(sio::message::ptr message) {
     assert(message);
     
     std::string message_str = message->get_string();
-    return [NSString stringWithCString:message_str.c_str() encoding:[NSString defaultCStringEncoding]];
+    return [NSString stringWithUTF8String:message_str.c_str()];
 }
 
 static NSArray* sio_array_message_2_ns_array(sio::message::ptr message) {
@@ -76,8 +76,8 @@ static NSDictionary* sio_object_message_2_ns_dict(sio::message::ptr message) {
     std::map<std::string, sio::message::ptr>& map = message->get_map();
     std::map<std::string, sio::message::ptr>::iterator iter;
     for (iter = map.begin(); iter != map.end(); iter++) {
-        NSString* ns_key = [NSString stringWithCString:iter->first.c_str()
-                                              encoding:[NSString defaultCStringEncoding]];
+        NSString* ns_key = [NSString stringWithUTF8String:iter->first.c_str()];
+
         sio::message::ptr value = iter->second;
         if (value->get_flag() == sio::message::flag_object) {
             NSDictionary* ns_sub_object_message = sio_object_message_2_ns_dict(value);
@@ -267,8 +267,7 @@ void SocketIoClientObjcImpl::clear_socket_listeners() {
 }
 
 void SocketIoClientObjcImpl::setup(const std::string& uri) {
-    NSString *ns_str = [NSString stringWithCString:uri.c_str()
-                                          encoding:[NSString defaultCStringEncoding]];
+    NSString *ns_str = [NSString stringWithUTF8String:uri.c_str()];
     [m_socketio_objc setup:ns_str];
 }
 
@@ -305,7 +304,7 @@ void SocketIoClientObjcImpl::emit(std::string const& name,
       }
   }
   
-  NSString* ns_name = [NSString stringWithCString:name.c_str() encoding:[NSString defaultCStringEncoding]];
+  NSString* ns_name = [NSString stringWithUTF8String:name.c_str()];
   [m_socketio_objc emit:ns_name message:ns_array_message callback:^(NSArray * _Nonnull message) {
       message::list message_list;
       for (id item in message) {
@@ -328,7 +327,7 @@ void SocketIoClientObjcImpl::emit(std::string const& name,
 void SocketIoClientObjcImpl::on(std::string const& event_name,
                                 event_listener_aux const& func) {
     __block event_listener_aux callback = func;
-    NSString* ns_event_name = [NSString stringWithCString:event_name.c_str() encoding:[NSString defaultCStringEncoding]];
+    NSString* ns_event_name = [NSString stringWithUTF8String:event_name.c_str()];
     [m_socketio_objc addListenerWithEventName:ns_event_name callback:^(NSArray * _Nonnull message) {
         message::list message_list;
         for (id item in message) {

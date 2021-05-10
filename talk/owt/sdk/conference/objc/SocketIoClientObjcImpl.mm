@@ -109,14 +109,18 @@ static sio::message::ptr ns_number_2_sio_message(NSNumber* message) {
     NSString* ns_objc_type = [NSString stringWithFormat:@"%s", [message objCType]];
     NSString* int64_base_type = [NSString stringWithFormat:@"%s", @encode(int64_t)];
     NSString* bool_base_type = [NSString stringWithFormat:@"%s", @encode(bool)];
+    NSString* Boolean_base_type = [NSString stringWithFormat:@"%s", @encode(Boolean)];
+    NSString* BOOL_base_type = [NSString stringWithFormat:@"%s", @encode(BOOL)];
     NSString* double_base_type = [NSString stringWithFormat:@"%s", @encode(double)];
     
     if (NSOrderedSame == [ns_objc_type compare:int64_base_type options:NSCaseInsensitiveSearch]) {
         return sio::int_message::create([message longLongValue]);
     } else if (NSOrderedSame == [ns_objc_type compare:double_base_type options:NSCaseInsensitiveSearch]) {
         return sio::double_message::create([message doubleValue]);
-    } else if (NSOrderedSame == [ns_objc_type compare:bool_base_type options:NSCaseInsensitiveSearch]) {
-        return sio::double_message::create([message boolValue]);
+    } else if (NSOrderedSame == [ns_objc_type compare:bool_base_type options:NSCaseInsensitiveSearch] ||
+               NSOrderedSame == [ns_objc_type compare:Boolean_base_type options:NSCaseInsensitiveSearch] ||
+               NSOrderedSame == [ns_objc_type compare:BOOL_base_type options:NSCaseInsensitiveSearch]) {
+        return sio::bool_message::create([message boolValue]);
     }
     
     return nullptr;

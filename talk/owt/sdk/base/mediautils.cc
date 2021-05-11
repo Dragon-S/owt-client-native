@@ -39,7 +39,7 @@ AudioCodec MediaUtils::GetAudioCodecFromString(const std::string& codec_name) {
   if (it != audio_codec_names.end()) {
     return it->second;
   }
-  RTC_NOTREACHED();
+//  RTC_NOTREACHED();
   return AudioCodec::kUnknown;
 }
 VideoCodec MediaUtils::GetVideoCodecFromString(const std::string& codec_name) {

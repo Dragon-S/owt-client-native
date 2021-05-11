@@ -68,23 +68,19 @@ const int kReconnectionAttempts = 14;
 const int kReconnectionDelay = 2000;
 const int kReconnectionDelayMax = 5000;
 ConferenceSocketSignalingChannel::ConferenceSocketSignalingChannel()
-    : socket_client_(new sio::client()),
+    : reconnection_ticket_(""),
+      participant_id_(""),
+      reconnection_attempted_(0),
+      is_reconnection_(false),
+      outgoing_message_id_(1) {}
+ConferenceSocketSignalingChannel::ConferenceSocketSignalingChannel(std::shared_ptr<sio::SocketIoClientInterface> socket_io_client)
+    : socket_io_client_(socket_io_client),
       reconnection_ticket_(""),
       participant_id_(""),
       reconnection_attempted_(0),
       is_reconnection_(false),
       outgoing_message_id_(1) {}
 ConferenceSocketSignalingChannel::~ConferenceSocketSignalingChannel() {
-  // delete socket_client_;//TODO: 此处有泄漏，主要是为了暂时解决socket线程阻塞主线程问题
-  socket_client_->set_reconnect_attempts(0);
-  socket_client_->set_reconnect_delay(0);
-  socket_client_->set_reconnect_delay_max(0);
-
-  socket_client_->clear_con_listeners();
-
-  socket_client_->clear_socket_listeners();
-
-  TriggerOnServerDisconnected();
 }
 void ConferenceSocketSignalingChannel::AddObserver(
     ConferenceSocketSignalingChannelObserver& observer) {
@@ -143,12 +139,12 @@ void ConferenceSocketSignalingChannel::Connect(
   rtc::GetStringFromJsonObject(json_token, "host", &host);
   std::weak_ptr<ConferenceSocketSignalingChannel> weak_this =
       shared_from_this();
-  socket_client_->socket();
-  socket_client_->set_reconnect_attempts(kReconnectionAttempts);
-  socket_client_->set_reconnect_delay(kReconnectionDelay);
-  socket_client_->set_reconnect_delay_max(kReconnectionDelayMax);
-  socket_client_->set_socket_close_listener(
-      [weak_this](std::string const& nsp) {
+  socket_io_client_->set_reconnect_attempts(kReconnectionAttempts);
+  socket_io_client_->set_reconnect_delay(kReconnectionDelay);
+  socket_io_client_->set_reconnect_delay_max(kReconnectionDelayMax);
+  socket_io_client_->setup(scheme.append(host));
+  socket_io_client_->set_close_listener(
+      [weak_this](sio::SocketIoClientInterface::close_reason const& reason) {
         RTC_LOG(LS_INFO) << "Socket.IO disconnected.";
         auto that = weak_this.lock();
         if (that && (that->reconnection_attempted_ >= kReconnectionAttempts ||
@@ -156,7 +152,7 @@ void ConferenceSocketSignalingChannel::Connect(
           that->TriggerOnServerDisconnected();
         }
       });
-  socket_client_->set_fail_listener([weak_this]() {
+  socket_io_client_->set_fail_listener([weak_this]() {
     RTC_LOG(LS_ERROR) << "Socket.IO connection failed.";
     auto that = weak_this.lock();
     if (that) {
@@ -166,7 +162,7 @@ void ConferenceSocketSignalingChannel::Connect(
       }
     }
   });
-  socket_client_->set_reconnect_listener(
+  socket_io_client_->set_reconnect_listener(
       [weak_this](const unsigned reconnect_made, const unsigned delay) {
         RTC_LOG(LS_INFO) << "Socket.IO Start Reconnection.";
         auto that = weak_this.lock();
@@ -174,7 +170,7 @@ void ConferenceSocketSignalingChannel::Connect(
           that->TriggerOnServerReconnecting();
         }
       });
-  socket_client_->set_reconnecting_listener([weak_this]() {
+  socket_io_client_->set_reconnecting_listener([weak_this]() {
     RTC_LOG(LS_INFO) << "Socket.IO reconnecting.";
     auto that = weak_this.lock();
     if (that) {
@@ -186,7 +182,7 @@ void ConferenceSocketSignalingChannel::Connect(
       }
     }
   });
-  socket_client_->set_open_listener([=](void) {
+  socket_io_client_->set_open_listener([=](void) {
     // At this time the connect failure callback is still in pending list. No
     // need to add a new entry in the pending list.
     if (!is_reconnection_) {
@@ -271,7 +267,7 @@ void ConferenceSocketSignalingChannel::Connect(
       is_reconnection_ = false;
       reconnection_attempted_ = 0;
     } else {
-      socket_client_->socket()->emit(
+      socket_io_client_->emit(
           kEventNameRelogin, reconnection_ticket_, [weak_this](sio::message::list const& msg) {
             auto that = weak_this.lock();
             if (!that) {
@@ -281,7 +277,7 @@ void ConferenceSocketSignalingChannel::Connect(
               RTC_LOG(LS_WARNING)
                   << "Received unknown message while reconnection ticket.";
               that->reconnection_attempted_ = kReconnectionAttempts;
-              that->socket_client_->close();
+              that->socket_io_client_->close();
               return;
             }
             sio::message::ptr ack =
@@ -292,7 +288,7 @@ void ConferenceSocketSignalingChannel::Connect(
                   << "Server returns " << state
                   << " when relogin. Maybe an invalid reconnection ticket.";
               that->reconnection_attempted_ = kReconnectionAttempts;
-              that->socket_client_->close();
+              that->socket_io_client_->close();
               return;
             }
             // The second element is room info, please refer to MCU
@@ -310,9 +306,9 @@ void ConferenceSocketSignalingChannel::Connect(
           });
     }
   });
-  socket_client_->socket()->on(
+  socket_io_client_->on(
       kEventNameStreamMessage,
-      sio::socket::event_listener_aux(
+      sio::SocketIoClientInterface::event_listener_aux(
           [weak_this](std::string const& name, sio::message::ptr const& data,
               bool is_ack, sio::message::list& ack_resp) {
             RTC_LOG(LS_VERBOSE) << "Received stream event.";
@@ -360,9 +356,9 @@ void ConferenceSocketSignalingChannel::Connect(
               }
             }
           }));
-  socket_client_->socket()->on(
+  socket_io_client_->on(
       kEventNameOnCustomMessage,
-      sio::socket::event_listener_aux(
+      sio::SocketIoClientInterface::event_listener_aux(
           [weak_this](std::string const& name, sio::message::ptr const& data,
               bool is_ack, sio::message::list& ack_resp) {
             RTC_LOG(LS_VERBOSE) << "Received custom message.";
@@ -382,9 +378,9 @@ void ConferenceSocketSignalingChannel::Connect(
               (*it)->OnCustomMessage(from, message, to);
             }
           }));
-  socket_client_->socket()->on(
+  socket_io_client_->on(
       kEventNameOnUserPresence,
-      sio::socket::event_listener_aux([weak_this](
+      sio::SocketIoClientInterface::event_listener_aux([weak_this](
           std::string const& name, sio::message::ptr const& data, bool is_ack,
           sio::message::list& ack_resp) {
         auto that = weak_this.lock();
@@ -422,9 +418,9 @@ void ConferenceSocketSignalingChannel::Connect(
           RTC_NOTREACHED();
         }
       }));
-  socket_client_->socket()->on(
+  socket_io_client_->on(
       kEventNameOnSignalingMessage,
-      sio::socket::event_listener_aux(
+      sio::SocketIoClientInterface::event_listener_aux(
           [weak_this](std::string const& name, sio::message::ptr const& data,
               bool is_ack, sio::message::list& ack_resp) {
             RTC_LOG(LS_VERBOSE) << "Received signaling message from erizo.";
@@ -437,9 +433,9 @@ void ConferenceSocketSignalingChannel::Connect(
               (*it)->OnSignalingMessage(data);
             }
           }));
-  socket_client_->socket()->on(
+  socket_io_client_->on(
       kEventNameOnDrop,
-      sio::socket::event_listener_aux(
+      sio::SocketIoClientInterface::event_listener_aux(
           [weak_this](std::string const& name, sio::message::ptr const& data,
               bool is_ack, sio::message::list& ack_resp) {
             RTC_LOG(LS_INFO) << "Received drop message.";
@@ -447,17 +443,17 @@ void ConferenceSocketSignalingChannel::Connect(
             if (!that) {
               return;
             }
-            if (that->socket_client_) {
-              that->socket_client_->set_reconnect_attempts(0);
+            if (that->socket_io_client_) {
+              that->socket_io_client_->set_reconnect_attempts(0);
             }
             std::lock_guard<std::mutex> lock(that->observer_mutex_);
             for (auto it = that->observers_.begin(); it != that->observers_.end(); ++it) {
               (*it)->OnServerDisconnected();
             }
           }));
-  socket_client_->socket()->on(
+  socket_io_client_->on(
       kEventNameConnectionFailed,
-      sio::socket::event_listener_aux(
+      sio::SocketIoClientInterface::event_listener_aux(
           [&](std::string const& name, sio::message::ptr const& data,
               bool is_ack, sio::message::list& ack_resp) {
             std::lock_guard<std::mutex> lock(observer_mutex_);
@@ -465,9 +461,9 @@ void ConferenceSocketSignalingChannel::Connect(
               (*it)->OnStreamError(data);
             }
           }));
-  socket_client_->socket()->on(
+  socket_io_client_->on(
       kEventNameSipAndPstnJoin,
-      sio::socket::event_listener_aux(
+      sio::SocketIoClientInterface::event_listener_aux(
           [&](std::string const& name, sio::message::ptr const& data,
               bool is_ack, sio::message::list& ack_resp) {
             std::lock_guard<std::mutex> lock(observer_mutex_);
@@ -477,12 +473,12 @@ void ConferenceSocketSignalingChannel::Connect(
           }));
   // Store |on_failure| so it can be invoked if connect failed.
   connect_failure_callback_ = on_failure;
-  socket_client_->connect(scheme.append(host));
+  socket_io_client_->connect();
 }
 void ConferenceSocketSignalingChannel::Disconnect(
     std::function<void()> on_success,
     std::function<void(std::unique_ptr<Exception>)> on_failure) {
-  if (!socket_client_->opened() && reconnection_attempted_ == 0 && on_failure) {
+  if (!socket_io_client_->opened() && reconnection_attempted_ == 0 && on_failure) {
     // Socket.IO is not connected and not reconnecting.
     std::unique_ptr<Exception> e(new Exception(
         ExceptionType::kConferenceInvalidSession, "Socket.IO is not connected."));
@@ -492,18 +488,18 @@ void ConferenceSocketSignalingChannel::Disconnect(
   }
   reconnection_attempted_ = kReconnectionAttempts;
   disconnect_complete_ = on_success;
-  if (socket_client_->opened()) {
+  if (socket_io_client_->opened()) {
     // Clear all pending failure callbacks after successful disconnect, don't check resp.
     std::weak_ptr<ConferenceSocketSignalingChannel> weak_this =
       shared_from_this();
-    socket_client_->socket()->emit(kEventNameLogout, nullptr,
+    socket_io_client_->emit(kEventNameLogout, nullptr,
                                    [weak_this](sio::message::list const& msg) {
                                     auto that = weak_this.lock();
                                     if (!that) {
                                       return;
                                     }
                                     that->DropQueuedMessages();
-                                    that->socket_client_->close();
+                                    that->socket_io_client_->close();
                                   });
   }
 }
@@ -893,7 +889,7 @@ void ConferenceSocketSignalingChannel::OnReconnectionTicket(
   }
 }
 void ConferenceSocketSignalingChannel::RefreshReconnectionTicket() {
-  socket_client_->socket()->emit(
+  socket_io_client_->emit(
       kEventNameRefreshReconnectionTicket, nullptr,
       [=](sio::message::list const& ack) {
         if (ack.size() != 2) {
@@ -945,17 +941,17 @@ void ConferenceSocketSignalingChannel::TriggerOnServerReconnectionSuccess() {
 void ConferenceSocketSignalingChannel::RequestConferenceInfo(
     std::function<void(sio::message::ptr room_info)> on_success,
     std::function<void(std::unique_ptr<Exception>)> on_failure) {
-  if (!socket_client_->opened() && reconnection_attempted_ == 0 && on_failure) {
+  if (!socket_io_client_->opened() && reconnection_attempted_ == 0 && on_failure) {
     // Socket.IO is not connected and not reconnecting.
     std::unique_ptr<Exception> e(new Exception(
         ExceptionType::kConferenceInvalidSession, "Socket.IO is not connected."));
     on_failure(std::move(e));
     return;
   }
-  if (socket_client_->opened()) {
+  if (socket_io_client_->opened()) {
     sio::message::ptr jsonObject = sio::object_message::create();
     jsonObject->get_map()["id"] = sio::string_message::create(participant_id_);
-    socket_client_->socket()->emit("room-infos", jsonObject, [=](sio::message::list const& msg) {
+    socket_io_client_->emit("room-infos", jsonObject, [=](sio::message::list const& msg) {
       sio::message::ptr message = msg.at(1);
       auto room_info = message->get_map()["room"];
       if (room_info == nullptr ||
@@ -976,7 +972,7 @@ void ConferenceSocketSignalingChannel::RequestConferenceInfo(
 void ConferenceSocketSignalingChannel::RequestParticipantsList(
     std::function<void(sio::message::ptr participantsList)> on_success,
     std::function<void(std::unique_ptr<Exception>)> on_failure) {
-  if (!socket_client_->opened() && reconnection_attempted_ == 0 && on_failure) {
+  if (!socket_io_client_->opened() && reconnection_attempted_ == 0 && on_failure) {
     // Socket.IO is not connected and not reconnecting.
     std::unique_ptr<Exception> e(new Exception(
         ExceptionType::kConferenceInvalidSession, "Socket.IO is not connected."));
@@ -985,7 +981,7 @@ void ConferenceSocketSignalingChannel::RequestParticipantsList(
   }
 
   sio::message::ptr requestParam = sio::string_message::create("string");
-  socket_client_->socket()->emit("getParticipantsList", requestParam, [=](sio::message::list const& msg) {
+  socket_io_client_->emit("getParticipantsList", requestParam, [=](sio::message::list const& msg) {
     if (msg.size() <= 0 && on_failure) {
       std::unique_ptr<Exception> e(new Exception(
           ExceptionType::kConferenceInvalidSession, "空消息！！！"));
@@ -1009,7 +1005,7 @@ void ConferenceSocketSignalingChannel::RequestParticipantsList(
 void ConferenceSocketSignalingChannel::TriggerOnServerUpdateConferenceInfoSuccess() {
   sio::message::ptr jsonObject = sio::object_message::create();
   jsonObject->get_map()["id"] = sio::string_message::create(participant_id_);
-  socket_client_->socket()->emit("room-infos", jsonObject, [=](sio::message::list const& msg) {
+  socket_io_client_->emit("room-infos", jsonObject, [=](sio::message::list const& msg) {
     sio::message::ptr message = msg.at(1);
     auto room_info = message->get_map()["room"];
     if (room_info == nullptr ||
@@ -1047,7 +1043,7 @@ void ConferenceSocketSignalingChannel::Emit(
   outgoing_messages_.push(sio_message);
   std::weak_ptr<ConferenceSocketSignalingChannel> weak_this =
       shared_from_this();
-  socket_client_->socket()->emit(
+  socket_io_client_->emit(
       name, message, [weak_this, message_id](sio::message::list const& msg) {
         RTC_LOG(LS_INFO) << "Received ack for message ID: " << message_id;
         auto that = weak_this.lock();

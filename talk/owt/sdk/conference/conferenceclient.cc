@@ -175,10 +175,26 @@ std::shared_ptr<ConferenceClient> ConferenceClient::Create(
     const ConferenceClientConfiguration& configuration) {
   return std::shared_ptr<ConferenceClient>(new ConferenceClient(configuration));
 }
+std::shared_ptr<ConferenceClient> ConferenceClient::Create(
+    const ConferenceClientConfiguration& configuration, std::shared_ptr<sio::SocketIoClientInterface> socket_io_client) {
+  return std::shared_ptr<ConferenceClient>(new ConferenceClient(configuration, socket_io_client));
+}
 ConferenceClient::ConferenceClient(
     const ConferenceClientConfiguration& configuration)
     : configuration_(configuration),
       signaling_channel_(new ConferenceSocketSignalingChannel()),
+      signaling_channel_connected_(false) {
+  auto task_queue_factory_ = webrtc::CreateDefaultTaskQueueFactory();
+  event_queue_ =
+      std::make_unique<rtc::TaskQueue>(task_queue_factory_->CreateTaskQueue(
+          "ConferenceClientEventQueue",
+          webrtc::TaskQueueFactory::Priority::NORMAL));
+  signaling_channel_->AddObserver(*this);
+}
+ConferenceClient::ConferenceClient(
+    const ConferenceClientConfiguration& configuration, std::shared_ptr<sio::SocketIoClientInterface> socket_io_client)
+    : configuration_(configuration),
+      signaling_channel_(new ConferenceSocketSignalingChannel(socket_io_client)),
       signaling_channel_connected_(false) {
   auto task_queue_factory_ = webrtc::CreateDefaultTaskQueueFactory();
   event_queue_ =

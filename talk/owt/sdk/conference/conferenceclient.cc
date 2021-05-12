@@ -1021,9 +1021,13 @@ void ConferenceClient::OnSignalingMessage(sio::message::ptr message) {
     std::string session_id = message->get_map()["id"]->get_string();
     const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
     for (auto its = stream_update_observers_.begin();
-        its != stream_update_observers_.end(); ++its) {
-      (*its).get().OnServerFailed(session_id,
-        "ErrorCode = " + std::to_string(error_code) + "ErrorMessage = " + error_message);
+      its != stream_update_observers_.end(); ++its) {
+      auto& o = (*its).get();
+      event_queue_->PostTask(
+          [&o, session_id, error_code, error_message] {
+            o.OnServerFailed(session_id, "ErrorCode = " +
+              std::to_string(error_code) + "ErrorMessage = " + error_message);
+          });
     }
     return;
   }

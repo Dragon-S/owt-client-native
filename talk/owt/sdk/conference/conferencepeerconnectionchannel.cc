@@ -901,6 +901,106 @@ void ConferencePeerConnectionChannel::OnSignalingMessage(
         << "Ignoring signaling message from server other than answer.";
   }
 }
+void ConferencePeerConnectionChannel::OnSignalingMessage(
+    sio::message::ptr flag, sio::message::ptr message) {
+  if (flag == nullptr) {
+    RTC_LOG(LS_INFO) << "Ignore empty signaling message";
+    return;
+  }
+  if (flag->get_flag() == sio::message::flag_string) {
+    if (flag->get_string() == "success") {
+      std::weak_ptr<ConferencePeerConnectionChannel> weak_this =
+          shared_from_this();
+      if (publish_success_callback_) {
+        event_queue_->PostTask([weak_this] {
+          auto that = weak_this.lock();
+          std::lock_guard<std::mutex> lock(that->callback_mutex_);
+          if (!that || !that->publish_success_callback_)
+            return;
+          that->publish_success_callback_(that->GetSessionId());
+          that->ResetCallbacks();
+        });
+      } else if (subscribe_success_callback_) {
+        bool stream_added = false;
+        {
+          std::lock_guard<std::mutex> lock(sub_stream_added_mutex_);
+          stream_added = sub_stream_added_;
+          sub_server_ready_ = true;
+          if (stream_added) {
+            event_queue_->PostTask([weak_this] {
+              auto that = weak_this.lock();
+              std::lock_guard<std::mutex> lock(that->callback_mutex_);
+              if (!that || !that->subscribe_success_callback_)
+                return;
+              that->subscribe_success_callback_(that->GetSessionId());
+              that->ResetCallbacks();
+            });
+            sub_server_ready_ = false;
+            sub_stream_added_ = false;
+          }
+        }
+      }
+      return;
+    } else if (flag->get_string() == "failure") {
+      if (!connected_ && failure_callback_) {
+        std::weak_ptr<ConferencePeerConnectionChannel> weak_this =
+            shared_from_this();
+        event_queue_->PostTask([weak_this] {
+          auto that = weak_this.lock();
+          std::lock_guard<std::mutex> lock(that->callback_mutex_);
+          if (!that || !that->failure_callback_)
+            return;
+          std::unique_ptr<Exception> e(new Exception(
+              ExceptionType::kConferenceUnknown,
+              "MCU internal error during connection establishment."));
+          that->failure_callback_(std::move(e));
+          that->ResetCallbacks();
+        });
+      } else {
+        if (nullptr != message) {
+          //专门处理服务端peer异常
+          //通知 Publication or Subscription服务端ice Failed或者Access node
+          int error_code = message->get_map()["code"]->get_int();
+          std::string error_message = message->get_map()["data"]->get_string();
+          RTC_LOG(LS_ERROR)
+            << "ServerError:: ErrorCode = " << error_code
+            << "::ErrorMessage = " << error_message;
+
+          std::string session_id = message->get_map()["id"]->get_string();
+          for (auto its = observers_.begin(); its != observers_.end(); ++its) {
+            (*its).get().OnServerFailed(session_id, "ErrorCode = " +
+                    std::to_string(error_code) + "ErrorMessage = " + error_message);
+          }
+        }
+      }
+    }
+    return;
+  } else if (flag->get_flag() != sio::message::flag_object) {
+    RTC_LOG(LS_WARNING) << "Ignore invalid signaling message from MCU.";
+    return;
+  }
+  // Since trickle ICE from MCU is not supported, we parse the message as
+  // SOAC message, not Canddiate message.
+  if (flag->get_map().find("type") == flag->get_map().end()) {
+    RTC_LOG(LS_INFO) << "Ignore erizo message without type from MCU.";
+    return;
+  }
+  if (flag->get_map()["type"]->get_flag() != sio::message::flag_string ||
+      flag->get_map()["sdp"] == nullptr ||
+      flag->get_map()["sdp"]->get_flag() != sio::message::flag_string) {
+    RTC_LOG(LS_ERROR) << "Invalid signaling message";
+    return;
+  }
+  const std::string type = flag->get_map()["type"]->get_string();
+  RTC_LOG(LS_INFO) << "On signaling message: " << type;
+  if (type == "answer") {
+    const std::string sdp = flag->get_map()["sdp"]->get_string();
+    SetRemoteDescription(type, sdp);
+  } else {
+    RTC_LOG(LS_ERROR)
+        << "Ignoring signaling message from server other than answer.";
+  }
+}
 void ConferencePeerConnectionChannel::DrainIceCandidates() {
   std::lock_guard<std::mutex> lock(candidates_mutex_);
   for (auto it = ice_candidates_.begin(); it != ice_candidates_.end(); ++it) {

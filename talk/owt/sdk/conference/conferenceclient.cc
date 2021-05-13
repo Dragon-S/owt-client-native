@@ -1004,31 +1004,11 @@ void ConferenceClient::OnSignalingMessage(sio::message::ptr message) {
   }
   if (soac_status->get_string() == "ready") {
     sio::message::ptr success_msg = sio::string_message::create("success");
-    pcc->OnSignalingMessage(success_msg);
+    pcc->OnSignalingMessage(success_msg, nullptr);
     return;
   } else if (soac_status->get_string() == "error") {
     sio::message::ptr failure_msg = sio::string_message::create("failure");
-    pcc->OnSignalingMessage(failure_msg);
-
-    //专门处理服务端peer异常
-    //通知 Publication or Subscription服务端ice Failed或者Access node
-    int error_code = message->get_map()["code"]->get_int();
-    std::string error_message = message->get_map()["data"]->get_string();
-    RTC_LOG(LS_ERROR)
-      << "ServerError:: ErrorCode = " << error_code
-      << "::ErrorMessage = " << error_message;
-
-    std::string session_id = message->get_map()["id"]->get_string();
-    const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
-    for (auto its = stream_update_observers_.begin();
-      its != stream_update_observers_.end(); ++its) {
-      auto& o = (*its).get();
-      event_queue_->PostTask(
-          [&o, session_id, error_code, error_message] {
-            o.OnServerFailed(session_id, "ErrorCode = " +
-              std::to_string(error_code) + "ErrorMessage = " + error_message);
-          });
-    }
+    pcc->OnSignalingMessage(failure_msg, message);
     return;
   }
   auto soac_data = message->get_map()["data"];
@@ -1039,7 +1019,7 @@ void ConferenceClient::OnSignalingMessage(sio::message::ptr message) {
         << "Received signaling message without offer, answer or candidate.";
     return;
   }
-  pcc->OnSignalingMessage(message->get_map()["data"]);
+  pcc->OnSignalingMessage(message->get_map()["data"], nullptr);
 }
 void ConferenceClient::OnStreamRemoved(sio::message::ptr stream) {
   RTC_LOG(LS_INFO) << "Stream removed.";
@@ -1159,6 +1139,10 @@ void ConferenceClient::OnSipAndPstnJoin(std::shared_ptr<sio::message> info) {
   for (auto its = observers_.begin(); its != observers_.end(); ++its) {
     (*its).get().OnSipAndPstnJoin(info->get_string());
   }
+}
+void ConferenceClient::OnServerFailed(
+    const std::string& peer_id, const std::string& error_msg) {
+  TriggerOnServerFailed(peer_id, error_msg);
 }
 void ConferenceClient::OnStreamError(
     std::shared_ptr<Stream> stream,
@@ -1791,6 +1775,14 @@ void ConferenceClient::TriggerOnStreamRemoved(sio::message::ptr stream_info) {
   for (auto its = stream_update_observers_.begin();
        its != stream_update_observers_.end(); ++its) {
     (*its).get().OnStreamRemoved(id);
+  }
+}
+void ConferenceClient::TriggerOnServerFailed(
+    const std::string& peer_id, const std::string& error_msg) {
+  const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
+  for (auto its = stream_update_observers_.begin();
+       its != stream_update_observers_.end(); ++its) {
+    (*its).get().OnServerFailed(peer_id, error_msg);
   }
 }
 void ConferenceClient::TriggerOnStreamError(

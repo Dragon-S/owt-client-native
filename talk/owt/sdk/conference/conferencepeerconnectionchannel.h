@@ -102,6 +102,7 @@ class ConferencePeerConnectionChannel
   std::string GetSessionId() const;
   // Socket.IO event
   virtual void OnSignalingMessage(sio::message::ptr message);
+  virtual void OnSignalingMessage(sio::message::ptr flag, sio::message::ptr message);
   // Get statistowt data for the specific stream.
   void GetConnectionStats(
       std::function<void(std::shared_ptr<ConnectionStats>)> on_success,

@@ -186,6 +186,8 @@ class ConferencePeerConnectionChannelObserver {
       std::shared_ptr<Stream> stream,
       const std::string& pcc_id,
       std::shared_ptr<const Exception> exception) = 0;
+  virtual void OnServerFailed(
+      const std::string& peer_id, const std::string& error_msg) = 0;
   virtual void OnIceStateChange(std::shared_ptr<Stream> stream, const int state) = 0;
 };
 /** @endcond */
@@ -394,6 +396,8 @@ class ConferenceClient final
       std::shared_ptr<Stream> stream,
       const std::string& pcc_id,
       std::shared_ptr<const Exception> exception) override;
+  virtual void OnServerFailed(
+    const std::string& peer_id, const std::string& error_msg) override;
   virtual void OnIceStateChange(
       std::shared_ptr<Stream> stream, const int state) override;
   // Provide access for Publication and Subscription instances.
@@ -484,6 +488,7 @@ class ConferenceClient final
   void TriggerOnStreamError(std::shared_ptr<Stream> stream,
                             const std::string& pcc_id,
                             std::shared_ptr<const Exception> exception);
+  void TriggerOnServerFailed(const std::string& peer_id, const std::string& error_msg);
   void TriggerOnIceStateChange(const int state);
   // Return true if |user_info| is correct, and |*participant| points to the participant
   // object

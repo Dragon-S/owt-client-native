@@ -207,6 +207,7 @@ void ConferenceSubscription::OnServerFailed(const std::string& peer_id, const st
   if (ended_ || peer_id != id_)
     return;
 
+  const std::lock_guard<std::mutex> lock(observer_mutex_);
   for (auto its = observers_.begin(); its != observers_.end(); ++its) {
     std::unique_ptr<Exception> e(
         new Exception(ExceptionType::kConferenceServerException, error_msg));

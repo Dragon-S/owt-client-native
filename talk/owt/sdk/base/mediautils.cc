@@ -15,11 +15,12 @@ static const std::map<const std::string, const Resolution> resolution_name_map =
     {"hd1080p", Resolution(1920, 1080)}};
 static const std::map<const std::string, const AudioCodec>
     audio_codec_names = {
-        {"opus", AudioCodec::kOpus}, {"isac", AudioCodec::kIsac},
-        {"g722", AudioCodec::kG722}, {"pcmu", AudioCodec::kPcmu},
-        {"pcma", AudioCodec::kPcma}, {"ilbc", AudioCodec::kIlbc},
-        {"aac", AudioCodec::kAac}, {"ac3", AudioCodec::kAc3},
-        {"asao", AudioCodec::kAsao}, {"unknown", AudioCodec::kUnknown}};
+        {"opus", AudioCodec::kOpus}, {"rsfecopus", AudioCodec::KRsfecopus},
+        {"isac", AudioCodec::kIsac}, {"g722", AudioCodec::kG722},
+        {"pcmu", AudioCodec::kPcmu}, {"pcma", AudioCodec::kPcma},
+        {"ilbc", AudioCodec::kIlbc}, {"aac", AudioCodec::kAac},
+        {"ac3", AudioCodec::kAc3}, {"asao", AudioCodec::kAsao},
+        {"unknown", AudioCodec::kUnknown}};
 static const std::map<const std::string, const VideoCodec>
     video_codec_names = {{"vp8", VideoCodec::kVp8},
                          {"vp9", VideoCodec::kVp9},
@@ -39,7 +40,7 @@ AudioCodec MediaUtils::GetAudioCodecFromString(const std::string& codec_name) {
   if (it != audio_codec_names.end()) {
     return it->second;
   }
-//  RTC_NOTREACHED();
+  RTC_NOTREACHED();
   return AudioCodec::kUnknown;
 }
 VideoCodec MediaUtils::GetVideoCodecFromString(const std::string& codec_name) {

@@ -65,7 +65,7 @@ const std::string kEventNameSipAndPstnJoin = "sipAndPstnJoin";
 const uint64_t kMachLinuxTimeDelta = 978307200;
 #endif
 const int kReconnectionAttempts = 14;
-const int kReconnectionDelay = 2000;
+const int kReconnectionDelay = 5000;
 const int kReconnectionDelayMax = 5000;
 ConferenceSocketSignalingChannel::ConferenceSocketSignalingChannel()
     : reconnection_ticket_(""),
@@ -164,11 +164,11 @@ void ConferenceSocketSignalingChannel::Connect(
   });
   socket_io_client_->set_reconnect_listener(
       [weak_this](const unsigned reconnect_made, const unsigned delay) {
-        RTC_LOG(LS_INFO) << "Socket.IO Start Reconnection.";
-        auto that = weak_this.lock();
-        if (that) {
-          that->TriggerOnServerReconnecting();
-        }
+        // RTC_LOG(LS_INFO) << "Socket.IO Start Reconnection.";
+        // auto that = weak_this.lock();
+        // if (that) {
+        //   that->TriggerOnServerReconnecting();
+        // }
       });
   socket_io_client_->set_reconnecting_listener([weak_this]() {
     RTC_LOG(LS_INFO) << "Socket.IO reconnecting.";
@@ -179,6 +179,7 @@ void ConferenceSocketSignalingChannel::Connect(
         // fail (fail listener).
         that->is_reconnection_ = true;
         that->reconnection_attempted_++;
+        that->TriggerOnServerReconnecting();
       }
     }
   });

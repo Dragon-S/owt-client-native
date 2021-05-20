@@ -137,6 +137,13 @@ void ConferencePeerConnectionChannel::IceRestartEx() {
 
     this->CreateOffer();
   } else {
+    RTC_LOG(LS_INFO) << "sll---------异常重启ice";
+    SetIceRestartConstraint(true);
+
+    //清除旧的ice
+    std::lock_guard<std::mutex> lock(candidates_mutex_);
+    ice_candidates_.clear();
+
     this->CreateOffer();
   }
 }

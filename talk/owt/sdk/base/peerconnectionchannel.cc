@@ -71,7 +71,7 @@ void PeerConnectionChannel::SetIceRestartConstraint(bool iceRestart) {
     }
   }
 
-  if (!existed) {
+  if (existed) {
     return;
   }
 

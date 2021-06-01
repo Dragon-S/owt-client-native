@@ -67,7 +67,10 @@ ConferencePeerConnectionChannel::ConferencePeerConnectionChannel(
       connected_(false),
       sub_stream_added_(false),
       sub_server_ready_(false),
-      event_queue_(event_queue) {
+      event_queue_(event_queue),
+      timestamp_(time(NULL)),
+      stop_timestamp_(time(NULL)),
+      stopped_(false) {
   InitializePeerConnection();
   RTC_CHECK(signaling_channel_);
 }
@@ -77,6 +80,10 @@ ConferencePeerConnectionChannel::~ConferencePeerConnectionChannel() {
     Unpublish(GetSessionId(), nullptr, nullptr);
   if (subscribed_stream_)
     Unsubscribe(GetSessionId(), nullptr, nullptr);
+
+  timestamp_ = time(NULL);
+  stop_timestamp_ = time(NULL);
+  stopped_ = false;
 }
 void ConferencePeerConnectionChannel::AddObserver(
     ConferencePeerConnectionChannelObserver& observer) {
@@ -137,14 +144,14 @@ void ConferencePeerConnectionChannel::IceRestartEx() {
 
     this->CreateOffer();
   } else {
-    RTC_LOG(LS_INFO) << "sll---------异常重启ice";
-    SetIceRestartConstraint(true);
+    RTC_LOG(LS_ERROR) << "IceRestartEx::异常重启";
+    // SetIceRestartConstraint(true);
 
-    //清除旧的ice
-    std::lock_guard<std::mutex> lock(candidates_mutex_);
-    ice_candidates_.clear();
+    // //清除旧的ice
+    // std::lock_guard<std::mutex> lock(candidates_mutex_);
+    // ice_candidates_.clear();
 
-    this->CreateOffer();
+    // this->CreateOffer();
   }
 }
 void ConferencePeerConnectionChannel::DoIceRestart() {
@@ -1147,6 +1154,17 @@ bool ConferencePeerConnectionChannel::IsMediaStreamEnded(
     }
   }
   return true;
+}
+void ConferencePeerConnectionChannel::UpdateStopStamp() {
+  stop_timestamp_ = time(NULL);
+  stopped_ = true;
+}
+bool ConferencePeerConnectionChannel::CanDeleted() {
+  if (session_id_ == "") {
+    return (time(NULL) - timestamp_) > 30;
+  } else {
+    return stopped_ && ((time(NULL) - stop_timestamp_) > 40);
+  }
 }
 }  // namespace conference
 }  // namespace owt

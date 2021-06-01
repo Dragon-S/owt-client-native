@@ -168,6 +168,7 @@ void ConferenceSubscription::Stop() {
   if (that == nullptr || ended_) {
     return;
   } else {
+    RTC_LOG(LS_INFO) << "sll---------ConferenceSubscription::Stop id_ = " << id_;
     that->UnSubscribe(id_, nullptr, nullptr);
     ended_ = true;
     const std::lock_guard<std::mutex> lock(observer_mutex_);
@@ -207,7 +208,6 @@ void ConferenceSubscription::OnServerFailed(const std::string& peer_id, const st
   if (ended_ || peer_id != id_)
     return;
 
-  const std::lock_guard<std::mutex> lock(observer_mutex_);
   for (auto its = observers_.begin(); its != observers_.end(); ++its) {
     std::unique_ptr<Exception> e(
         new Exception(ExceptionType::kConferenceServerException, error_msg));

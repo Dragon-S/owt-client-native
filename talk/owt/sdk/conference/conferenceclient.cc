@@ -214,7 +214,9 @@ void ConferenceClient::RemoveObserver(ConferenceClientObserver& observer) {
 }
 void ConferenceClient::AddStreamUpdateObserver(
     ConferenceStreamUpdateObserver& observer) {
+  RTC_LOG(LS_INFO) << "sll----1---stream_update_observer_mutex_ 锁";
   const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
+  RTC_LOG(LS_INFO) << "sll----2---stream_update_observer_mutex_ 锁";
   std::vector<std::reference_wrapper<ConferenceStreamUpdateObserver>>::iterator
       it = std::find_if(
           stream_update_observers_.begin(), stream_update_observers_.end(),
@@ -222,13 +224,17 @@ void ConferenceClient::AddStreamUpdateObserver(
               -> bool { return &observer == &(o.get()); });
   if (it != stream_update_observers_.end()) {
     RTC_LOG(LS_INFO) << "Adding duplicate observer.";
+    RTC_LOG(LS_INFO) << "sll-------stream_update_observer_mutex_ 解锁";
     return;
   }
   stream_update_observers_.push_back(observer);
+  RTC_LOG(LS_INFO) << "sll-------stream_update_observer_mutex_ 解锁";
 }
 void ConferenceClient::RemoveStreamUpdateObserver(
     ConferenceStreamUpdateObserver& observer) {
+  RTC_LOG(LS_INFO) << "sll----1---stream_update_observer_mutex_ 锁";
   const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
+  RTC_LOG(LS_INFO) << "sll----2---stream_update_observer_mutex_ 锁";
   auto it = std::find_if(
       stream_update_observers_.begin(), stream_update_observers_.end(),
       [&](std::reference_wrapper<ConferenceStreamUpdateObserver> o) -> bool {
@@ -236,6 +242,7 @@ void ConferenceClient::RemoveStreamUpdateObserver(
       });
   if (it != stream_update_observers_.end())
     stream_update_observers_.erase(it);
+  RTC_LOG(LS_INFO) << "sll-------stream_update_observer_mutex_ 解锁";
 }
 void ConferenceClient::Join(
     const std::string& token,
@@ -583,6 +590,7 @@ void ConferenceClient::Subscribe(
   pcc->AddObserver(*this);
   {
     std::lock_guard<std::mutex> lock(subscribe_pcs_mutex_);
+    RTC_LOG(LS_INFO) << "sll---------subscribe_pcs_增加 = "<<pcc;
     subscribe_pcs_.push_back(pcc);
   }
   std::weak_ptr<ConferenceClient> weak_this = shared_from_this();
@@ -620,6 +628,7 @@ void ConferenceClient::UnPublish(
     }
     return;
   }
+  pcc->UpdateStopStamp();
   pcc->Unpublish(session_id,
                  [=]() {
                    if (on_success != nullptr)
@@ -629,6 +638,7 @@ void ConferenceClient::UnPublish(
                      auto it = publish_pcs_.begin();
                      while (it != publish_pcs_.end()) {
                        if ((*it)->GetSessionId() == session_id) {
+                        RTC_LOG(LS_INFO) << "sll---------Unpublish清除pub_pcs";
                          publish_pcs_.erase(it);
                          break;
                        }
@@ -651,27 +661,31 @@ void ConferenceClient::ForceRemovePcc(const std::string& session_id) {
   subscribe_id_label_map_.erase(session_id);
 }
 void ConferenceClient::IceRestart(const std::string& session_id) {
-  std::lock_guard<std::mutex> subscribe_pcs_mutex_lock(subscribe_pcs_mutex_);
-  std::find_if(subscribe_pcs_.begin(), subscribe_pcs_.end(),
-      [&](std::shared_ptr<ConferencePeerConnectionChannel> o) -> bool {
-        bool isExisted = (o->GetSessionId() == session_id);
-        if (isExisted) {
-          RTC_LOG(LS_INFO) << "ConferenceClient::IceRestart::subsciption----success";
-          o->IceRestartEx();
-        }
-        return isExisted;
-      });
+  {
+    std::lock_guard<std::mutex> subscribe_pcs_mutex_lock(subscribe_pcs_mutex_);
+    std::find_if(subscribe_pcs_.begin(), subscribe_pcs_.end(),
+        [&](std::shared_ptr<ConferencePeerConnectionChannel> o) -> bool {
+          bool isExisted = (o->GetSessionId() == session_id);
+          if (isExisted) {
+            RTC_LOG(LS_INFO) << "ConferenceClient::IceRestart::subsciption----success";
+            o->IceRestartEx();
+          }
+          return isExisted;
+        });
+  }
 
-  std::lock_guard<std::mutex> publish_pcs_mutex_lock(publish_pcs_mutex_);
-  std::find_if(publish_pcs_.begin(), publish_pcs_.end(),
-      [&](std::shared_ptr<ConferencePeerConnectionChannel> o) -> bool {
-        bool isExisted = (o->GetSessionId() == session_id);
-        if (isExisted) {
-          RTC_LOG(LS_INFO) << "ConferenceClient::IceRestart::publication----success";
-          o->IceRestartEx();
-        }
-        return isExisted;
-      });
+  {
+    std::lock_guard<std::mutex> publish_pcs_mutex_lock(publish_pcs_mutex_);
+    std::find_if(publish_pcs_.begin(), publish_pcs_.end(),
+        [&](std::shared_ptr<ConferencePeerConnectionChannel> o) -> bool {
+          bool isExisted = (o->GetSessionId() == session_id);
+          if (isExisted) {
+            RTC_LOG(LS_INFO) << "ConferenceClient::IceRestart::publication----success";
+            o->IceRestartEx();
+          }
+          return isExisted;
+        });
+  }
 }
 void ConferenceClient::UnSubscribe(
     const std::string& session_id,
@@ -691,6 +705,7 @@ void ConferenceClient::UnSubscribe(
     }
     return;
   }
+  pcc->UpdateStopStamp();
   pcc->Unsubscribe(session_id,
                    [=]() {
                      if (on_success != nullptr)
@@ -700,6 +715,7 @@ void ConferenceClient::UnSubscribe(
                        auto it = subscribe_pcs_.begin();
                        while (it != subscribe_pcs_.end()) {
                          if ((*it)->GetSessionId() == session_id) {
+                           RTC_LOG(LS_INFO) << "sll---------Unsubscribe清除sub_pcs = "<<session_id;
                            subscribe_pcs_.erase(it);
                            break;
                          }
@@ -753,6 +769,114 @@ void ConferenceClient::Send(
     },
     on_failure);
 }
+
+void ConferenceClient::ClearInvalidPeerconnection(const std::vector<std::string>& peers_id) {
+  std::vector<std::string> temp_peers_id(peers_id);
+  RTC_LOG(LS_INFO) << "sll---------ConferenceClient::ClearInvalidPeerconnection()";
+  {
+    std::lock_guard<std::mutex> lock(subscribe_pcs_mutex_);
+    RTC_LOG(LS_INFO) << "sll----1-----subscribe_pcs_.size = "<<subscribe_pcs_.size();
+    auto it = subscribe_pcs_.begin();
+    while (it != subscribe_pcs_.end()) {
+      RTC_LOG(LS_INFO) << "sll----2-----subscribe_pcs_.size = "<<subscribe_pcs_.size();
+      std::string session_id = (*it)->GetSessionId();
+      bool can_deleted = (*it)->CanDeleted();
+
+      //清除无id的pc
+      if ((*it) != nullptr && can_deleted && session_id == "") {
+        RTC_LOG(LS_INFO) << "sll---------清除无id的无效sub_pc = "<<(*it);
+        subscribe_pcs_.erase(it);
+        continue;
+      }
+
+      //清除有id的pc
+      std::vector<std::string>::iterator id_it = std::find_if(temp_peers_id.begin(), temp_peers_id.end(),
+        [session_id](const std::string& item)->bool { return (item == session_id); });
+      if ((*it) != nullptr && id_it != temp_peers_id.end()) {
+        RTC_LOG(LS_INFO) << "sll---------清除有id的无效sub_pc = "<<(*it);
+        RTC_LOG(LS_INFO) << "sll---------清除有id的无效pc_id = "<<(*id_it);
+        subscribe_pcs_.erase(it);
+        temp_peers_id.erase(id_it);
+        continue;
+      }
+
+      //清除有id且stop超时的pc
+      if ((*it) != nullptr && can_deleted && session_id != "") {
+        RTC_LOG(LS_INFO) << "sll---------清除无id的无效sub_pc = "<<(*it);
+        subscribe_pcs_.erase(it);
+        continue;
+      }
+      ++it;
+    }
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(publish_pcs_mutex_);
+    RTC_LOG(LS_INFO) << "sll----1-----publish_pcs_.size = "<<publish_pcs_.size();
+    auto it = publish_pcs_.begin();
+    while (it != publish_pcs_.end()) {
+      RTC_LOG(LS_INFO) << "sll----2-----publish_pcs_.size = "<<publish_pcs_.size();
+      std::string session_id = (*it)->GetSessionId();
+      bool can_deleted = (*it)->CanDeleted();
+
+      //清除无id的pc
+      if ((*it) != nullptr && can_deleted && session_id == "") {
+        RTC_LOG(LS_INFO) << "sll---------清除无id的无效pub_pc = "<<(*it);
+        publish_pcs_.erase(it);
+        continue;
+      }
+
+      //清除有id的pc
+      std::vector<std::string>::iterator id_it = std::find_if(temp_peers_id.begin(), temp_peers_id.end(),
+        [session_id](const std::string& item)->bool { return (item == session_id); });
+      if ((*it) != nullptr && id_it != temp_peers_id.end()) {
+        RTC_LOG(LS_INFO) << "sll---------清除有id的无效pub_pc = "<<(*it);
+        publish_pcs_.erase(it);
+        continue;
+      }
+
+      //清除有id且stop超时的pc
+      if ((*it) != nullptr && can_deleted && session_id != "") {
+        RTC_LOG(LS_INFO) << "sll---------清除无id的无效sub_pc = "<<(*it);
+        publish_pcs_.erase(it);
+        continue;
+      }
+      ++it;
+    }
+  }
+}
+
+// void ConferenceClient::ClearInvalidPeerconnection() {
+//   RTC_LOG(LS_INFO) << "sll---------ConferenceClient::ClearInvalidPeerconnection()";
+//   {
+//     std::lock_guard<std::mutex> lock(subscribe_pcs_mutex_);
+//     RTC_LOG(LS_INFO) << "sll----1-----subscribe_pcs_.size = "<<subscribe_pcs_.size();
+//     auto it = subscribe_pcs_.begin();
+//     while (it != subscribe_pcs_.end()) {
+//       RTC_LOG(LS_INFO) << "sll----2-----subscribe_pcs_.size = "<<subscribe_pcs_.size();
+//       if ((*it) != nullptr && (*it)->GetSessionId() == "") {
+//         RTC_LOG(LS_INFO) << "sll---------清除无效sub_pc = "<<(*it);
+//         subscribe_pcs_.erase(it);
+//         continue;
+//       }
+//      ++it;
+//     }
+//   }
+
+//   {
+//     std::lock_guard<std::mutex> lock(publish_pcs_mutex_);
+//     auto it = publish_pcs_.begin();
+//     while (it != publish_pcs_.end()) {
+//       if ((*it)->GetSessionId() == "") {
+//         RTC_LOG(LS_INFO) << "sll---------清除无效pub_pc";
+//         publish_pcs_.erase(it);
+//         continue;
+//       }
+//       ++it;
+//     }
+//   }
+// }
+
 void ConferenceClient::UpdateSubscription(
     const std::string& session_id,
     const std::string& stream_id,
@@ -807,6 +931,8 @@ void ConferenceClient::UpdateSubscription(
   update_message->get_map()["data"] = update_option;
   signaling_channel_->SendSubscriptionUpdateMessage(update_message, on_success,
                                                     on_failure);
+  // std::vector<std::string> peers_id = {};
+  // ClearInvalidPeerconnection();
 }
 void ConferenceClient::Mute(
     const std::string& session_id,
@@ -1568,7 +1694,9 @@ void ConferenceClient::ParseStreamInfo(sio::message::ptr stream_info,
       added_streams_[id] = remote_stream;
       added_stream_type_[id] = StreamType::kStreamTypeCamera;
       {
+        RTC_LOG(LS_INFO) << "sll----1---stream_update_observer_mutex_ 锁";
         const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
+        RTC_LOG(LS_INFO) << "sll----2---stream_update_observer_mutex_ 锁";
         current_conference_info_->AddOrUpdateStream(remote_stream, updated);
         if (!joining && !updated) {
           for (auto its = observers_.begin(); its != observers_.end(); ++its) {
@@ -1577,6 +1705,7 @@ void ConferenceClient::ParseStreamInfo(sio::message::ptr stream_info,
                 [&o, remote_stream] { o.OnStreamAdded(remote_stream); });
           }
         }
+        RTC_LOG(LS_INFO) << "sll-------stream_update_observer_mutex_ 解锁";
       }
     } else {
       auto remote_stream = std::make_shared<RemoteStream>(
@@ -1590,7 +1719,9 @@ void ConferenceClient::ParseStreamInfo(sio::message::ptr stream_info,
       added_streams_[id] = remote_stream;
       added_stream_type_[id] = StreamType::kStreamTypeScreen;
       {
+        RTC_LOG(LS_INFO) << "sll----1---stream_update_observer_mutex_ 锁";
         const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
+        RTC_LOG(LS_INFO) << "sll----2---stream_update_observer_mutex_ 锁";
         current_conference_info_->AddOrUpdateStream(remote_stream, updated);
         if (!joining && !updated) {
           for (auto its = observers_.begin(); its != observers_.end(); ++its) {
@@ -1599,6 +1730,7 @@ void ConferenceClient::ParseStreamInfo(sio::message::ptr stream_info,
                 [&o, remote_stream] { o.OnStreamAdded(remote_stream); });
           }
         }
+        RTC_LOG(LS_INFO) << "sll-------stream_update_observer_mutex_ 解锁";
       }
     }
   } else if (type == "mixed") {
@@ -1614,7 +1746,9 @@ void ConferenceClient::ParseStreamInfo(sio::message::ptr stream_info,
     added_streams_[id] = remote_stream;
     added_stream_type_[id] = StreamType::kStreamTypeMix;
     {
+      RTC_LOG(LS_INFO) << "sll----1---stream_update_observer_mutex_ 锁";
       const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
+      RTC_LOG(LS_INFO) << "sll----2---stream_update_observer_mutex_ 锁";
       current_conference_info_->AddOrUpdateStream(remote_stream, updated);
       if (!joining) {
         for (auto its = observers_.begin(); its != observers_.end(); ++its) {
@@ -1623,6 +1757,7 @@ void ConferenceClient::ParseStreamInfo(sio::message::ptr stream_info,
               [&o, remote_stream] { o.OnStreamAdded(remote_stream); });
         }
       }
+      RTC_LOG(LS_INFO) << "sll-------stream_update_observer_mutex_ 解锁";
     }
   }
 }
@@ -1755,45 +1890,60 @@ void ConferenceClient::TriggerOnStreamRemoved(sio::message::ptr stream_info) {
   added_stream_type_.erase(stream_type);
   current_conference_info_->TriggerOnStreamEnded(id, is_host);
   current_conference_info_->RemoveStreamById(id);
+  RTC_LOG(LS_INFO) << "sll----1---stream_update_observer_mutex_ 锁";
   const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
+  RTC_LOG(LS_INFO) << "sll----2---stream_update_observer_mutex_ 锁";
   for (auto its = stream_update_observers_.begin();
        its != stream_update_observers_.end(); ++its) {
     (*its).get().OnStreamRemoved(id);
   }
+  RTC_LOG(LS_INFO) << "sll-------stream_update_observer_mutex_ 解锁";
 }
 void ConferenceClient::TriggerOnServerFailed(
     const std::string& peer_id, const std::string& error_msg) {
+  RTC_LOG(LS_INFO) << "sll----1---stream_update_observer_mutex_ 锁";
   const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
+  RTC_LOG(LS_INFO) << "sll----2---stream_update_observer_mutex_ 锁";
   for (auto its = stream_update_observers_.begin();
        its != stream_update_observers_.end(); ++its) {
     (*its).get().OnServerFailed(peer_id, error_msg);
   }
+  RTC_LOG(LS_INFO) << "sll-------stream_update_observer_mutex_ 解锁";
 }
 void ConferenceClient::TriggerOnStreamError(
     std::shared_ptr<Stream> stream,
     const std::string& pcc_id,
     std::shared_ptr<const Exception> exception) {
+  RTC_LOG(LS_INFO) << "sll----1---stream_update_observer_mutex_ 锁";
   const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
+  RTC_LOG(LS_INFO) << "sll----2---stream_update_observer_mutex_ 锁";
   for (auto its = stream_update_observers_.begin();
        its != stream_update_observers_.end(); ++its) {
     (*its).get().OnStreamError(pcc_id, exception->Message());
   }
+  RTC_LOG(LS_INFO) << "sll-------stream_update_observer_mutex_ 解锁";
 }
 void ConferenceClient::TriggerOnStreamError(
     std::shared_ptr<Stream> stream,
     std::shared_ptr<const Exception> exception) {
+  RTC_LOG(LS_INFO) << "sll----1---stream_update_observer_mutex_ 锁";
   const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
+  RTC_LOG(LS_INFO) << "sll----2---stream_update_observer_mutex_ 锁";
   for (auto its = stream_update_observers_.begin();
        its != stream_update_observers_.end(); ++its) {
     (*its).get().OnStreamError(exception->Message());
   }
+  RTC_LOG(LS_INFO) << "sll-------stream_update_observer_mutex_ 解锁";
 }
 void ConferenceClient::TriggerOnIceStateChange(const int state) {
+  RTC_LOG(LS_INFO) << "sll----1---stream_update_observer_mutex_ 锁";
   const std::lock_guard<std::mutex> lock(stream_update_observer_mutex_);
+  RTC_LOG(LS_INFO) << "sll----2---stream_update_observer_mutex_ 锁";
   for (auto its = stream_update_observers_.begin();
        its != stream_update_observers_.end(); ++its) {
     (*its).get().OnIceStateChange(state);
   }
+  RTC_LOG(LS_INFO) << "sll-------stream_update_observer_mutex_ 解锁";
 }
 void ConferenceClient::TriggerOnStreamUpdated(sio::message::ptr stream_info) {
   if (!(stream_info && stream_info->get_flag() == sio::message::flag_object &&

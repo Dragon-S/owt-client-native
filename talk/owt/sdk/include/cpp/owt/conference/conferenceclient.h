@@ -365,6 +365,10 @@ class ConferenceClient final
    @brief 重启ICE
   */
   void IceRestart(const std::string& session_id);
+  /**
+   @brief 清除无效的pc
+  */
+  void ClearInvalidPeerconnection(const std::vector<std::string>& peers_id = {});
  protected:
   ConferenceClient(const ConferenceClientConfiguration& configuration);
   // Implementing ConferenceSocketSignalingChannelObserver.
@@ -503,6 +507,7 @@ class ConferenceClient final
   void AddStreamUpdateObserver(ConferenceStreamUpdateObserver& observer);
   /// Remove an object from conference client.
   void RemoveStreamUpdateObserver(ConferenceStreamUpdateObserver& observer);
+  // void ClearInvalidPeerconnection();
   enum StreamType: int;
   ConferenceClientConfiguration configuration_;
   // Queue for callbacks and events. Shared among ConferenceClient and all of

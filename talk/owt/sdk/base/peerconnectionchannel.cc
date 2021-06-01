@@ -18,9 +18,9 @@ PeerConnectionChannel::PeerConnectionChannel(
 PeerConnectionChannel::~PeerConnectionChannel() {
   if (peer_connection_ != nullptr) {
     peer_connection_->Close();
+    peer_connection_ = nullptr;
   }
-
-  peer_connection_ = nullptr;
+  RTC_LOG(LS_INFO) << "sll---------释放pc_thread_"<<pc_thread_;
 }
 bool PeerConnectionChannel::InitializePeerConnection() {
   RTC_LOG(LS_INFO) << "Initialize PeerConnection.";
@@ -41,6 +41,7 @@ bool PeerConnectionChannel::InitializePeerConnection() {
     pc_thread_ = rtc::Thread::CreateWithSocketServer();
     pc_thread_->SetName("pc_thread", nullptr);
     pc_thread_->Start();
+    RTC_LOG(LS_INFO) << "sll---------创建pc_thread_"<<pc_thread_;
   }
   RTC_CHECK(peer_connection_);
   RTC_CHECK(pc_thread_);

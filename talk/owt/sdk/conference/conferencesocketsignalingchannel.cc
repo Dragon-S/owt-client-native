@@ -1060,6 +1060,7 @@ void ConferenceSocketSignalingChannel::Emit(
           std::lock_guard<std::mutex> lock(that->outgoing_message_mutex_);
           if (that->outgoing_messages_.empty()) {
             //RTC_NOTREACHED();
+            RTC_LOG(LS_INFO) << "sll--------that->outgoing_messages_.empty()";
             return;
           }
           /*RTC_DCHECK_EQ(message_id, that->outgoing_messages_.front().id)
@@ -1076,7 +1077,10 @@ void ConferenceSocketSignalingChannel::Emit(
           that->outgoing_messages_.pop();
         }
         if (callback) {
+          RTC_LOG(LS_INFO) << "sll--------callback";
           callback(msg);
+        } else {
+          RTC_LOG(LS_INFO) << "sll--------callback = null";
         }
       });
 }
@@ -1084,6 +1088,7 @@ void ConferenceSocketSignalingChannel::Emit(
 void ConferenceSocketSignalingChannel::DropQueuedMessagesNoCallback() {
   std::lock_guard<std::mutex> lock(outgoing_message_mutex_);
   //高效清除queue
+  RTC_LOG(LS_INFO) << "sll--------ConferenceSocketSignalingChannel::DropQueuedMessagesNoCallback";
   std::queue<SioMessage> empty;
   std::swap(empty, outgoing_messages_);
 }

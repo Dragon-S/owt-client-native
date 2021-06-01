@@ -636,6 +636,7 @@ void ConferenceClient::UnPublish(
     }
     return;
   }
+  pcc->UpdateStopStamp();
   pcc->Unpublish(session_id,
                  [=]() {
                    if (on_success != nullptr)
@@ -667,27 +668,31 @@ void ConferenceClient::ForceRemovePcc(const std::string& session_id) {
   subscribe_id_label_map_.erase(session_id);
 }
 void ConferenceClient::IceRestart(const std::string& session_id) {
-  std::lock_guard<std::mutex> subscribe_pcs_mutex_lock(subscribe_pcs_mutex_);
-  std::find_if(subscribe_pcs_.begin(), subscribe_pcs_.end(),
-      [&](std::shared_ptr<ConferencePeerConnectionChannel> o) -> bool {
-        bool isExisted = (o->GetSessionId() == session_id);
-        if (isExisted) {
-          RTC_LOG(LS_INFO) << "ConferenceClient::IceRestart::subsciption----success";
-          o->IceRestartEx();
-        }
-        return isExisted;
-      });
+  {
+    std::lock_guard<std::mutex> subscribe_pcs_mutex_lock(subscribe_pcs_mutex_);
+    std::find_if(subscribe_pcs_.begin(), subscribe_pcs_.end(),
+        [&](std::shared_ptr<ConferencePeerConnectionChannel> o) -> bool {
+          bool isExisted = (o->GetSessionId() == session_id);
+          if (isExisted) {
+            RTC_LOG(LS_INFO) << "ConferenceClient::IceRestart::subsciption----success";
+            o->IceRestartEx();
+          }
+          return isExisted;
+        });
+  }
 
-  std::lock_guard<std::mutex> publish_pcs_mutex_lock(publish_pcs_mutex_);
-  std::find_if(publish_pcs_.begin(), publish_pcs_.end(),
-      [&](std::shared_ptr<ConferencePeerConnectionChannel> o) -> bool {
-        bool isExisted = (o->GetSessionId() == session_id);
-        if (isExisted) {
-          RTC_LOG(LS_INFO) << "ConferenceClient::IceRestart::publication----success";
-          o->IceRestartEx();
-        }
-        return isExisted;
-      });
+  {
+    std::lock_guard<std::mutex> publish_pcs_mutex_lock(publish_pcs_mutex_);
+    std::find_if(publish_pcs_.begin(), publish_pcs_.end(),
+        [&](std::shared_ptr<ConferencePeerConnectionChannel> o) -> bool {
+          bool isExisted = (o->GetSessionId() == session_id);
+          if (isExisted) {
+            RTC_LOG(LS_INFO) << "ConferenceClient::IceRestart::publication----success";
+            o->IceRestartEx();
+          }
+          return isExisted;
+        });
+  }
 }
 void ConferenceClient::UnSubscribe(
     const std::string& session_id,
@@ -707,6 +712,7 @@ void ConferenceClient::UnSubscribe(
     }
     return;
   }
+  pcc->UpdateStopStamp();
   pcc->Unsubscribe(session_id,
                    [=]() {
                      if (on_success != nullptr)
@@ -725,6 +731,81 @@ void ConferenceClient::UnSubscribe(
                      }
                    },
                    on_failure);
+}
+void ConferenceClient::ClearInvalidPeerconnection(const std::vector<std::string>& peers_id) {
+  std::vector<std::string> temp_peers_id(peers_id);
+  RTC_LOG(LS_INFO) << "sll---------ConferenceClient::ClearInvalidPeerconnection()";
+  {
+    std::lock_guard<std::mutex> lock(subscribe_pcs_mutex_);
+    RTC_LOG(LS_INFO) << "sll----1-----subscribe_pcs_.size = "<<subscribe_pcs_.size();
+    auto it = subscribe_pcs_.begin();
+    while (it != subscribe_pcs_.end()) {
+      RTC_LOG(LS_INFO) << "sll----2-----subscribe_pcs_.size = "<<subscribe_pcs_.size();
+      std::string session_id = (*it)->GetSessionId();
+      bool can_deleted = (*it)->CanDeleted();
+
+      //清除无id的pc
+      if ((*it) != nullptr && can_deleted && session_id == "") {
+        RTC_LOG(LS_INFO) << "sll---------清除无id的无效sub_pc = "<<(*it);
+        subscribe_pcs_.erase(it);
+        continue;
+      }
+
+      //清除有id的pc
+      std::vector<std::string>::iterator id_it = std::find_if(temp_peers_id.begin(), temp_peers_id.end(),
+        [session_id](const std::string& item)->bool { return (item == session_id); });
+      if ((*it) != nullptr && id_it != temp_peers_id.end()) {
+        RTC_LOG(LS_INFO) << "sll---------清除有id的无效sub_pc = "<<(*it);
+        RTC_LOG(LS_INFO) << "sll---------清除有id的无效pc_id = "<<(*id_it);
+        subscribe_pcs_.erase(it);
+        temp_peers_id.erase(id_it);
+        continue;
+      }
+
+      //清除有id且stop超时的pc
+      if ((*it) != nullptr && can_deleted && session_id != "") {
+        RTC_LOG(LS_INFO) << "sll---------清除无id的无效sub_pc = "<<(*it);
+        subscribe_pcs_.erase(it);
+        continue;
+      }
+      ++it;
+    }
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(publish_pcs_mutex_);
+    RTC_LOG(LS_INFO) << "sll----1-----publish_pcs_.size = "<<publish_pcs_.size();
+    auto it = publish_pcs_.begin();
+    while (it != publish_pcs_.end()) {
+      RTC_LOG(LS_INFO) << "sll----2-----publish_pcs_.size = "<<publish_pcs_.size();
+      std::string session_id = (*it)->GetSessionId();
+      bool can_deleted = (*it)->CanDeleted();
+
+      //清除无id的pc
+      if ((*it) != nullptr && can_deleted && session_id == "") {
+        RTC_LOG(LS_INFO) << "sll---------清除无id的无效pub_pc = "<<(*it);
+        publish_pcs_.erase(it);
+        continue;
+      }
+
+      //清除有id的pc
+      std::vector<std::string>::iterator id_it = std::find_if(temp_peers_id.begin(), temp_peers_id.end(),
+        [session_id](const std::string& item)->bool { return (item == session_id); });
+      if ((*it) != nullptr && id_it != temp_peers_id.end()) {
+        RTC_LOG(LS_INFO) << "sll---------清除有id的无效pub_pc = "<<(*it);
+        publish_pcs_.erase(it);
+        continue;
+      }
+
+      //清除有id且stop超时的pc
+      if ((*it) != nullptr && can_deleted && session_id != "") {
+        RTC_LOG(LS_INFO) << "sll---------清除无id的无效sub_pc = "<<(*it);
+        publish_pcs_.erase(it);
+        continue;
+      }
+      ++it;
+    }
+  }
 }
 void ConferenceClient::Send(
     const std::string& message,

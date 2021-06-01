@@ -337,6 +337,15 @@ PlayPauseFailureCallback(FailureBlock on_failure,
     _nativeConferenceClient->CloseSignalChannel();
   }
 }
+- (void)clearInvalidPeerconnection:(NSArray*)peerIds {
+  if (_nativeConferenceClient) {
+    std::vector<std::string> vPeerIds = {};
+    for (NSString* peerId in peerIds) {
+      vPeerIds.push_back([peerId UTF8String]);
+    }
+    _nativeConferenceClient->ClearInvalidPeerconnection(vPeerIds);
+  }
+}
 - (void)setDelegate:(id<OWTConferenceClientDelegate>)delegate {
   if (delegate != nil) {
     __weak OWTConferenceClient *weakSelf = self;

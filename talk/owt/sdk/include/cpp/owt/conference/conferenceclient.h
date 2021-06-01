@@ -370,6 +370,10 @@ class ConferenceClient final
    @brief 重启ICE
   */
   void IceRestart(const std::string& session_id);
+  /**
+   @brief 清除无效的pc
+  */
+  void ClearInvalidPeerconnection(const std::vector<std::string>& peers_id = {});
  protected:
   ConferenceClient(const ConferenceClientConfiguration& configuration);
   // Implementing ConferenceSocketSignalingChannelObserver.

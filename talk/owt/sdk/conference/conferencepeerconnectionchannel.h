@@ -113,6 +113,8 @@ class ConferencePeerConnectionChannel
   // Called when MCU reports stream/connection is failed or ICE failed.
   void OnStreamError(const std::string& error_message);
   void OnIceStateChange(const int state);
+  bool CanDeleted();
+  void UpdateStopStamp();
  protected:
   void CreateOffer() override;
   void CreateAnswer() override;
@@ -201,6 +203,10 @@ class ConferencePeerConnectionChannel
   bool sub_server_ready_;
   // Queue for callbacks and events.
   std::shared_ptr<rtc::TaskQueue> event_queue_;
+
+  time_t timestamp_;
+  time_t stop_timestamp_;
+  bool stopped_;
 };
 }
 }

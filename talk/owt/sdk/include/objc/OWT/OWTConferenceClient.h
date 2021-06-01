@@ -98,6 +98,10 @@ RTC_OBJC_EXPORT
   @brief 用于在调用leaveWithOnSuccess后，socket收不到Logout成功时调用，用来关闭socket
 */
 - (void)closeClientSignalChannel;
+/**
+  @brief 用于清除上次无法清除的pc
+*/
+- (void)clearInvalidPeerconnection:(NSArray*)peerIds;
 @property(nonatomic, weak) id<OWTConferenceClientDelegate> delegate;
 @end
 /// Delegate for OWTConferenceClient.

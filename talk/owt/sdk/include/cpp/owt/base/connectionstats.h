@@ -278,7 +278,7 @@ class RTCDataChannelStats final : public RTCStats {
   std::string label;
   std::string protocol;
   // The "id" attribute ofthe datachannel
-  int32_t datachannelid;
+  int32_t data_channel_identifier;
   // TODO: Support enum types? "RTCStatsMember<RTCDataChannelState>"?
   // The "readyState" of the DataChannel object
   std::string state;
@@ -717,6 +717,7 @@ class RTCInboundRTPStreamStats final : public RTCRTPStreamStats {
                            double gap_loss_rate,
                            double gap_discard_rate,
                            uint32_t frames_decoded,
+                           uint32_t frames_rendered,
                            uint32_t key_frames_decoded,
                            double total_decode_time,
                            double total_inter_frame_delay,
@@ -760,6 +761,7 @@ class RTCInboundRTPStreamStats final : public RTCRTPStreamStats {
   // TODO: Collect and populate this value.
   double gap_discard_rate;
   uint32_t frames_decoded;
+  uint32_t frames_rendered;
   uint32_t key_frames_decoded;
   double total_decode_time;
   double total_inter_frame_delay;

@@ -12,6 +12,8 @@
 #endif
 #include "webrtc/sdk/media_constraints.h"
 #include "webrtc/rtc_base/bind.h"
+#include "webrtc/rtc_base/network.h"
+#include "webrtc/p2p/base/basic_packet_socket_factory.h"
 namespace owt {
 namespace base {
 using webrtc::MediaStreamInterface;
@@ -54,7 +56,6 @@ class PeerConnectionDependencyFactory : public rtc::RefCountInterface {
       webrtc::VideoTrackSourceInterface* video_source);
   rtc::scoped_refptr<AudioSourceInterface> CreateAudioSource(
       const cricket::AudioOptions& options);
-  rtc::NetworkMonitorInterface* NetworkMonitor();
   // Returns current |pc_factory_|.
   rtc::scoped_refptr<PeerConnectionFactoryInterface> PeerConnectionFactory()
       const;
@@ -72,7 +73,6 @@ class PeerConnectionDependencyFactory : public rtc::RefCountInterface {
   CreatePeerConnectionOnCurrentThread(
       const webrtc::PeerConnectionInterface::RTCConfiguration& config,
       webrtc::PeerConnectionObserver* observer);
-  void CreateNetworkMonitorOnCurrentThread();
 #if defined(WEBRTC_WIN) || defined(WEBRTC_LINUX)
   rtc::scoped_refptr<webrtc::AudioDeviceModule> CreateCustomizedAudioDeviceModuleOnCurrentThread();
 #endif
@@ -91,14 +91,13 @@ class PeerConnectionDependencyFactory : public rtc::RefCountInterface {
                                                // VP8, H.264 & HEVC enc/dec
 #endif
   bool encoded_frame_;
-#if defined(WEBRTC_IOS)
-  rtc::NetworkMonitorInterface* network_monitor_;
-#endif
   std::string field_trial_;
 #if defined(WEBRTC_WIN)
   std::unique_ptr<webrtc::ScopedCOMInitializer> com_initializer_;
   std::unique_ptr<webrtc::TaskQueueFactory> task_queue_factory_;
 #endif
+  std::shared_ptr<rtc::BasicNetworkManager> network_manager_;
+  std::shared_ptr<rtc::BasicPacketSocketFactory> packet_socket_factory_;
 };
 }
 }  // namespace owt

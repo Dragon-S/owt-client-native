@@ -6,7 +6,6 @@
 #include "webrtc/api/task_queue/default_task_queue_factory.h"
 #include "webrtc/rtc_base/third_party/base64/base64.h"
 #include "webrtc/rtc_base/checks.h"
-#include "webrtc/rtc_base/critical_section.h"
 #include "webrtc/rtc_base/strings/json.h"
 #include "webrtc/rtc_base/logging.h"
 #include "webrtc/rtc_base/task_queue.h"
@@ -234,7 +233,8 @@ void P2PClient::OnSignalingMessage(const std::string& message,
       new_pcc->Publish(stream, success_callback, failure_callback);
       return;
     }
-  } else if (message.find("\"type\":\"chat-closed\"") != std::string::npos) {
+  } 
+  else if (message.find("\"type\":\"chat-closed\"") != std::string::npos) {
     int code = 0;
     std::string error = "";
     Json::Reader reader;

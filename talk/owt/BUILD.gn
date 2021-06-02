@@ -4,6 +4,24 @@
 
 import("//build_overrides/webrtc.gni")
 import("//testing/test.gni")
+
+# Introduced for using libvpx config files. We only enable libvpx rate
+# controller for VP9 on Windows.
+if (is_win) {
+ 
+ if (current_cpu == "x86") {
+   cpu_arch_full = "ia32"
+ } else if (current_cpu == "x64") {
+   cpu_arch_full = "x64"
+ } else if (current_cpu == "arm") {
+   if (arm_use_neon) {
+     cpu_arch_full = "arm-neon"
+   } else {
+     cpu_arch_full = "arm"
+   }
+ }
+}
+
 if (is_android) {
   import("//build/config/android/config.gni")
   import("//build/config/android/rules.gni")
@@ -119,6 +137,7 @@ static_library("owt_sdk_base") {
       "sdk/base/encodedvideoencoderfactory.h",
       "sdk/base/webrtcvideorendererimpl.cc",
       "sdk/base/webrtcvideorendererimpl.h",
+      "sdk/base/windowcapturer.cc",
       "sdk/include/cpp/owt/base/videodecoderinterface.h",
     ]
   }
@@ -156,51 +175,19 @@ static_library("owt_sdk_base") {
 
   defines = [ "USE_BUILTIN_SW_CODECS" ]
 
-  if (owt_msdk_header_root != "") {
+  if (is_win && owt_msdk_header_root != "") {
     include_dirs += [ owt_msdk_header_root ]
-  }
-
-  if (rtc_include_internal_audio_device) {
-    defines += [ "WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE" ]
-  }
-  if (rtc_use_x11) {
-    defines += [ "WEBRTC_USE_X11" ]
-  }
-  if (!rtc_use_h265) {
-    defines += [ "DISABLE_H265" ]
-  } else {
-    defines += [ "OWT_USE_H265" ]
-  }
-  
-  if (owt_use_quic) {
-    defines += [ "OWT_ENABLE_QUIC" ]
-    if (owt_quic_header_root != "") {
-      include_dirs += [ owt_quic_header_root ]
-    }
-  }
-  
-  if (is_win || is_linux) {
-    # Custom audio/video input and output.
-    # When rebasing libwebrtc to a new version, custom audio/video input/output
-    # usually need some changes to fit the latest API.
-    defines += [ "OWT_CUSTOM_AVIO" ]
-  }
-  if (is_ios) {
+    defines += [ "OWT_USE_MSDK" ]
     sources += [
-      "sdk/base/ios/networkmonitorios.cc",
-      "sdk/base/ios/networkmonitorios.h",
-    ]
-    public_deps += [ "//third_party/webrtc/sdk:framework_objc+link" ]
-  }
-  if (is_win) {
-    sources += [
-      "sdk/base/desktopcapturer.cc",
-      "sdk/base/desktopcapturer.h",
       "sdk/base/win/base_allocator.cc",
       "sdk/base/win/base_allocator.h",
       "sdk/base/win/d3d_allocator.cc",
       "sdk/base/win/d3d_allocator.h",
+      "sdk/base/win/d3d11_allocator.cc",
+      "sdk/base/win/d3d11_allocator.h",
       "sdk/base/win/d3dnativeframe.h",
+      "sdk/base/win/mediacapabilities.cc",
+      "sdk/base/win/mediacapabilities.h",
       "sdk/base/win/msdkvideobase.cc",
       "sdk/base/win/msdkvideobase.h",
       "sdk/base/win/msdkvideodecoder.cc",
@@ -213,14 +200,65 @@ static_library("owt_sdk_base") {
       "sdk/base/win/msdkvideoencoderfactory.h",
       "sdk/base/win/sysmem_allocator.cc",
       "sdk/base/win/sysmem_allocator.h",
+      "sdk/base/win/vpedefs.h",
+      "sdk/base/win/vp9ratecontrol.cc",
+      "sdk/base/win/vp9ratecontrol.h",
+    ]
+    public_deps += [ "//third_party/libvpx" ]
+    include_dirs += [
+      "//third_party/libvpx/source/config",
+      "//third_party/libvpx/source/config/$current_os/$cpu_arch_full",
+      "//third_party/libvpx/source/libvpx",
+    ]
+  }
+
+  if (rtc_include_internal_audio_device) {
+    defines += [ "WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE" ]
+  }
+  if (rtc_use_x11) {
+    defines += [ "WEBRTC_USE_X11" ]
+  }
+
+  if (!rtc_use_h265) {
+    defines += [ "DISABLE_H265" ]
+  } else {
+    defines += [ "OWT_USE_H265" ]
+  }
+  
+  if (owt_use_quic) {
+    defines += [ "OWT_ENABLE_QUIC" ]
+    if (owt_quic_header_root != "") {
+      include_dirs += [ owt_quic_header_root ]
+    }
+  }
+
+  if (is_win || is_linux) {
+    # Custom audio/video input and output.
+    # When rebasing libwebrtc to a new version, custom audio/video input/output
+    # usually need some changes to fit the latest API.
+    defines += [ "OWT_CUSTOM_AVIO" ]
+  }
+  if (is_win) {
+    sources += [
+      "sdk/base/desktopcapturer.cc",
+      "sdk/base/desktopcapturer.h",
       "sdk/base/win/videorendererwin.cc",
       "sdk/base/win/videorendererwin.h",
-      "sdk/base/windowcapturer.cc",
+      "sdk/base/win/videorendererd3d11.cc",
+      "sdk/base/win/videorendererd3d11.h",
+      "sdk/base/win/d3d11_manager.h",
+      "sdk/base/win/device_info_mf.h",
+      "sdk/base/win/device_info_mf.cc",
+      "sdk/base/win/video_capture_mf.h",
+      "sdk/base/win/video_capture_mf.cc",
     ]
     public_deps += [ "//third_party/webrtc/modules/audio_device:audio_device_module_from_input_and_output" ]
+    
   }
   if (is_linux) {
     if (owt_msdk_header_root != "") {
+      include_dirs += [ owt_msdk_header_root ]
+      defines += [ "OWT_USE_MSDK" ]
       sources += [
         "sdk/base/linux/displayutils.cc",
         "sdk/base/linux/displayutils.h",
@@ -341,9 +379,14 @@ if (is_ios) {
       ":owt_sdk_p2p",
       "//third_party/jsoncpp",
     ]
+    if (is_ios) {
+      deps += [ "//third_party/webrtc/sdk:framework_objc+link" ]
+    }
     include_dirs = [
       "//third_party",
-      "//third_party/webrtc/sdk/objc/Framework/Headers",
+      "//third_party/webrtc/sdk/objc/api/peerconnection",
+      "//third_party/webrtc/sdk/objc/api/logging",
+      "//third_party/webrtc/sdk/objc/api/video_codec",
       "sdk/include/cpp",
       "sdk/include/objc",
     ]
@@ -362,8 +405,6 @@ if (is_ios) {
       "sdk/base/objc/OWTDefaultVideoEncoderFactory.h",
       "sdk/base/objc/OWTDefaultVideoEncoderFactory.m",
       "sdk/base/objc/OWTErrors.m",
-
-      #"sdk/base/objc/OWTGlobalConfiguration.mm",
       "sdk/base/objc/OWTLocalStream+Private.h",
       "sdk/base/objc/OWTLocalStream.mm",
       "sdk/base/objc/OWTMediaFormat+Internal.h",
@@ -382,8 +423,6 @@ if (is_ios) {
       "sdk/base/objc/RemoteStreamObserverObjcImpl.mm",
       "sdk/base/objc/public/OWTErrors.h",
       "sdk/base/objc/public/OWTFrameGeneratorProtocol.h",
-
-      #"sdk/base/objc/public/OWTGlobalConfiguration.h",
       "sdk/base/objc/public/OWTLocalCameraStream.h",
       "sdk/base/objc/public/OWTLocalCameraStreamParameters.h",
       "sdk/base/objc/public/OWTLocalCustomizedStream.h",
